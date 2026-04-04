@@ -169,11 +169,18 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     setUploadDone(false)
     try {
       const title = `${brand || '未命名'} — ${topic || 'Script'}`
-      const res = await fetch('/api/upload-drive', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content: script }),
+      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXeMeXgtA9rB3DyRG-3JaVEAC512Ls8Cje6h6DONyh3ADyJl5ClCzDHnnMTzD-clv59g/exec'
+      
+      const params = new URLSearchParams({
+        title,
+        content: script,
+        secret: 'soon-bbo-2026',
       })
+      
+      const res = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`, {
+        method: 'GET',
+      })
+      
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setDriveUrl(data.url)
