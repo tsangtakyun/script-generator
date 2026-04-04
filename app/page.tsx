@@ -161,7 +161,26 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     setLoading(false)
   }
 
-  const copyScript = () => {
+  const uploadToDrive = async () => {
+    if (!script) return
+    setUploading(true)
+    setUploadDone(false)
+    try {
+      const title = `${brand || '未命名'} — ${topic || 'Script'}`
+      const res = await fetch('/api/upload-drive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content: script }),
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      setDriveUrl(data.url)
+      setUploadDone(true)
+    } catch (err: any) {
+      alert('上傳失敗：' + err.message)
+    }
+    setUploading(false)
+  }
     navigator.clipboard.writeText(script)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
