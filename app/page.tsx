@@ -3,88 +3,149 @@ import { useState } from 'react'
 
 const INDUSTRIES = ['飲食', '旅遊', '美妝', '活動', '好物分享', '生活', '文化', '科技']
 
-const HOOK_STYLES = [
-  { id: 'question', label: '問題式', desc: '以問題開場，引起好奇' },
-  { id: 'shocking', label: '震撼式', desc: '驚人數據或事實開場' },
-  { id: 'story', label: '故事式', desc: '以個人經歷帶入' },
-  { id: 'contrast', label: '對比式', desc: '強烈前後對比' },
+const HOOKS = [
+  { c: 'H1', n: '極端行動質問', d: '誇張行為/處境問觀眾' },
+  { c: 'H2', n: '真定假 — 直接挑戰', d: '質疑廣泛聲稱，邀請驗證' },
+  { c: 'H3', n: '聽講 — 半信半疑', d: '借第三者說法引入懸念' },
+  { c: 'H4', n: '感官喚起 + 懸念', d: '啟動感官記憶再拋轉折' },
+  { c: 'H5', n: '反差驚喜 — 竟然', d: '意想不到對比，情緒跳躍' },
+  { c: 'H6', n: '意外自我披露', d: '個人資訊拉近距離' },
+  { c: 'H7', n: '荒誕事實', d: '真實但匪夷所思，引發驚訝' },
+  { c: 'H8', n: '代入感假設', d: '「如果」句式直問觀眾' },
 ]
 
-const TRANSITION_STYLES = [
-  { id: 'natural', label: '自然過渡', desc: '流暢連接各段落' },
-  { id: 'numbered', label: '數字式', desc: '第一、第二、第三' },
-  { id: 'question', label: '問題引導', desc: '用問題帶出下一段' },
-  { id: 'contrast', label: '轉折式', desc: '但係、然而、不過' },
+const TRANS = [
+  { c: 'T1', n: '情緒代入 — 同行感', d: '主持緊張，拉觀眾入狀態' },
+  { c: 'T2', n: '轉念 — 入去先信咗', d: '懷疑被現實正面打臉' },
+  { c: 'T3', n: '質疑名氣 — 實力存疑', d: '對名氣打預防針' },
+  { c: 'T4', n: '實測宣言 — 等我試下', d: '宣佈「我幫你試」' },
+  { c: 'T5', n: '場景切割 — 另有真相', d: '意想不到角度重新定義' },
+  { c: 'T6', n: '第一印象反轉', d: '坦白第一眼唔吸引' },
+  { c: 'T7', n: '靈魂轉移 — 重點喺呢度', d: '真正精華喺另一樣' },
+  { c: 'T8', n: '頓悟時刻', d: '具體動作到情感領悟' },
 ]
 
-const ENDING_STYLES = [
-  { id: 'cta', label: '行動呼籲', desc: '叫用戶追蹤、分享' },
-  { id: 'question', label: '互動提問', desc: '問用戶意見引留言' },
-  { id: 'summary', label: '總結式', desc: '重申核心信息' },
-  { id: 'tbc', label: '待續式', desc: '預告下集內容' },
+const ENDS = [
+  { c: 'E1', n: '留白式 Verdict', d: '坦白收，短句，唔誇張' },
+  { c: 'E2', n: '值唔值得 — 親身作答', d: '回應開場，直接給答案' },
+  { c: 'E3', n: '情懷翻轉 — 真材實料', d: '老字號靠真實力' },
+  { c: 'E4', n: '自嘲收尾 — 解鎖', d: '輕鬆收，帶幽默' },
+  { c: 'E5', n: '詩意留白', d: '短句節奏，情緒拉遠' },
+  { c: 'E6', n: '個人感悟 — 超越食玩', d: '升華到人生意義' },
+  { c: 'E7', n: '哲學收結', d: '最有重量，適合文化類' },
 ]
+
+function buildSystem() {
+  return `你係廣東話短片 script 寫手，幫 content creator 寫 IG Reel / YouTube Short。
+廣東話口語，短句，坦白，唔oversell，每句有目的。
+
+結構：
+1.【Opening Hook】一句，5秒
+2.【背景 VO】80-100字
+3.【轉場】一句，10秒
+4.【實測內容】4項，每項：名稱、拍攝提示、旁白1-2句
+5.【Ending】一句5秒＋主持1-2句感想
+
+Hook：H1誇張行為問觀眾｜H2挑戰廣泛聲稱｜H3借第三者引懸念｜H4感官記憶+轉折｜H5意外對比｜H6個人披露｜H7荒誕事實｜H8如果句式
+轉場：T1主持緊張同行｜T2懷疑被打臉｜T3對名氣存疑｜T4宣佈親自試｜T5意外角度｜T6第一眼唔吸引｜T7重點係另一樣｜T8動作到領悟
+Ending：E1坦白留白｜E2直接回應開場｜E3真實力｜E4自嘲幽默｜E5詩意短句｜E6升華人生｜E7哲學重量
+
+飲食：VO名氣+賣點+質疑。實測招牌食物，旁白口感質地味道。
+旅遊：VO歷史場景氣氛。實測景點，旁白感受文化。
+美妝：VO品牌賣點場合。實測產品，旁白質地效果持久。
+好物分享：VO發現+定位+好奇。實測功能，旁白效果改變。
+其他：VO賣點懸念。實測重點。
+
+輸出格式：
+
+【Opening Hook】
+（一句）
+
+【背景 VO】
+（80-100字）
+
+【轉場】
+（一句）
+
+【實測內容】
+1. 名稱
+   拍攝：
+   旁白：
+
+2. 名稱
+   拍攝：
+   旁白：
+
+3. 名稱
+   拍攝：
+   旁白：
+
+4. 名稱
+   拍攝：
+   旁白：
+
+【Ending】
+（一句）
+＋ 主持1-2句感想`
+}
+
+const css = {
+  bg: '#EEEADE',
+  ink: '#1a1a18',
+  ink2: '#5a5a52',
+  ink3: '#9a9a8e',
+  border: 'rgba(26,26,24,0.13)',
+  border2: 'rgba(26,26,24,0.28)',
+  inputBg: 'rgba(255,255,255,0.55)',
+  inputFocus: 'rgba(255,255,255,0.85)',
+  radius: '8px',
+}
 
 export default function ScriptGenerator() {
   const [brand, setBrand] = useState('')
-  const [industry, setIndustry] = useState('')
+  const [industry, setIndustry] = useState('飲食')
   const [topic, setTopic] = useState('')
   const [background, setBackground] = useState('')
-  const [hookStyle, setHookStyle] = useState('')
-  const [transitionStyle, setTransitionStyle] = useState('')
-  const [endingStyle, setEndingStyle] = useState('')
+  const [selH, setSelH] = useState('H1')
+  const [selT, setSelT] = useState('T1')
+  const [selE, setSelE] = useState('E1')
   const [script, setScript] = useState('')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState('')
 
-  const generateScript = async () => {
-    if (!brand || !industry || !topic || !background || !hookStyle || !transitionStyle || !endingStyle) {
-      alert('請填寫所有欄位')
-      return
-    }
+  const generate = async () => {
+    if (!topic.trim()) return
     setLoading(true)
     setScript('')
+    setError('')
+
+    const h = HOOKS.find(x => x.c === selH)!
+    const t = TRANS.find(x => x.c === selT)!
+    const e = ENDS.find(x => x.c === selE)!
+
+    const userMsg = `${brand ? `品牌：${brand}\n` : ''}類型：${industry}
+主題：${topic}
+${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${t.c}｜Ending：${e.c}
+
+請即刻輸出完整 script，唔好加前言。`
+
     try {
-      const response = await fetch('/api/generate', {
+      const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-opus-4-6',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 2000,
-          messages: [{
-            role: 'user',
-            content: `你係一個專業嘅香港短影片 Script Writer，請用廣東話（繁體中文）幫我寫一個 IG Reel / YouTube Shorts 嘅 Script。
-
-品牌／個人名稱：${brand}
-行業／類型：${industry}
-主題：${topic}
-背景資料：${background}
-Hook 風格：${hookStyle}
-轉場風格：${transitionStyle}
-Ending 風格：${endingStyle}
-
-請按以下格式輸出：
-
-【HOOK】
-（吸引眼球嘅開場，約5-10秒）
-
-【主體內容】
-（核心內容，分2-3個段落）
-
-【ENDING】
-（結尾行動呼籲）
-
-【字幕建議】
-（3-5個重點字幕）
-
-【拍攝備註】
-（給拍攝團隊嘅簡短備註）`
-          }]
+          system: buildSystem(),
+          messages: [{ role: 'user', content: userMsg }]
         })
       })
-      const data = await response.json()
-      setScript(data.content[0].text)
-    } catch (error) {
-      alert('生成失敗，請重試')
+      const data = await res.json()
+      if (data.error) throw new Error(data.error.message)
+      setScript(data.content?.[0]?.text || '')
+    } catch (err: any) {
+      setError('出現錯誤：' + err.message)
     }
     setLoading(false)
   }
@@ -95,136 +156,139 @@ Ending 風格：${endingStyle}
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const style = {
-    label: { fontSize: '11px', letterSpacing: '0.15em', color: '#888', marginBottom: '12px', display: 'block' } as React.CSSProperties,
-    input: { width: '100%', padding: '12px 16px', border: '1px solid #e0ddd6', backgroundColor: 'transparent', fontSize: '15px', fontFamily: 'EB Garamond, serif', color: '#1a1a1a', outline: 'none', boxSizing: 'border-box' } as React.CSSProperties,
-    section: { marginBottom: '40px' } as React.CSSProperties,
-  }
+  const StyleCard = ({ item, selected, onSelect }: { item: any, selected: boolean, onSelect: () => void }) => (
+    <div onClick={onSelect} style={{
+      cursor: 'pointer',
+      padding: '15px 17px',
+      borderRadius: css.radius,
+      border: `1px solid ${selected ? css.ink : css.border}`,
+      backgroundColor: selected ? css.inputFocus : css.inputBg,
+      transition: 'all .18s',
+    }}>
+      <div style={{ fontSize: '10px', letterSpacing: '.1em', textTransform: 'uppercase', color: css.ink3, marginBottom: '5px', fontWeight: 500 }}>{item.c}</div>
+      <div style={{ fontSize: '13px', fontWeight: 500, color: css.ink, marginBottom: '3px' }}>{item.n}</div>
+      <div style={{ fontSize: '11px', color: css.ink3, lineHeight: 1.45 }}>{item.d}</div>
+    </div>
+  )
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F5F2EC', fontFamily: 'EB Garamond, serif', padding: '48px 32px' }}>
-      <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-        <p style={{ fontSize: '11px', letterSpacing: '0.15em', color: '#888', marginBottom: '8px' }}>SOON · AI MEDIA CONTENT CREATION</p>
-        <h1 style={{ fontSize: '36px', fontWeight: '400', color: '#1a1a1a', marginBottom: '48px' }}>劇本生成 <em>/ Beta</em></h1>
+    <div style={{ backgroundColor: css.bg, color: css.ink, fontFamily: "'DM Sans', sans-serif", minHeight: '100vh' }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+
+      <div style={{ maxWidth: '780px', margin: '0 auto', padding: '56px 40px 100px' }}>
+        <div style={{ fontSize: '11px', letterSpacing: '.17em', textTransform: 'uppercase', color: css.ink3, marginBottom: '14px' }}>AI Media Content Creation</div>
+        <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '52px', fontWeight: 400, lineHeight: 1.05, color: css.ink }}>
+          Script Generator <span style={{ color: css.ink3, fontStyle: 'italic' }}>/ Beta</span>
+        </h1>
+        <div style={{ height: '1px', background: css.border, margin: '36px 0 52px' }} />
 
         {/* 01 品牌 */}
-        <div style={style.section}>
-          <label style={style.label}>01 &nbsp; 品牌 / 個人名稱</label>
-          <input style={style.input} value={brand} onChange={e => setBrand(e.target.value)} placeholder="例：BBO、Tommy Tsang" />
+        <div style={{ marginBottom: '48px' }}>
+          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>01</div>
+          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>品牌 / 個人名稱</div>
+          <input value={brand} onChange={e => setBrand(e.target.value)} placeholder="例：One Bite、丁丁、Hilary Travels"
+            style={{ width: '100%', background: css.inputBg, border: `1px solid ${css.border}`, borderRadius: css.radius, padding: '16px 20px', fontSize: '15px', fontFamily: "'DM Sans', sans-serif", color: css.ink, outline: 'none', boxSizing: 'border-box' }} />
         </div>
 
         {/* 02 行業 */}
-        <div style={style.section}>
-          <label style={style.label}>02 &nbsp; 行業 / 類型</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ marginBottom: '48px' }}>
+          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>02</div>
+          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>行業 / 類型</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
             {INDUSTRIES.map(i => (
               <button key={i} onClick={() => setIndustry(i)} style={{
-                padding: '8px 18px', border: '1px solid', cursor: 'pointer', fontSize: '14px', fontFamily: 'EB Garamond, serif',
-                borderColor: industry === i ? '#1a1a1a' : '#e0ddd6',
-                backgroundColor: industry === i ? '#1a1a1a' : 'transparent',
-                color: industry === i ? '#F5F2EC' : '#1a1a1a',
+                cursor: 'pointer', fontSize: '14px', fontFamily: "'DM Sans', sans-serif",
+                padding: '9px 22px', borderRadius: '99px', border: `1px solid ${industry === i ? css.ink : css.border2}`,
+                color: industry === i ? css.bg : css.ink2,
+                background: industry === i ? css.ink : 'transparent',
+                transition: 'all .18s',
               }}>{i}</button>
             ))}
           </div>
         </div>
 
         {/* 03 主題 */}
-        <div style={style.section}>
-          <label style={style.label}>03 &nbsp; 主題</label>
-          <input style={style.input} value={topic} onChange={e => setTopic(e.target.value)} placeholder="例：介紹新開嘅隱藏餐廳" />
+        <div style={{ marginBottom: '48px' }}>
+          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>03</div>
+          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>主題</div>
+          <input value={topic} onChange={e => setTopic(e.target.value)} placeholder="例：最強宵夜滷肉飯？全世界最靚聖誕市集？"
+            style={{ width: '100%', background: css.inputBg, border: `1px solid ${css.border}`, borderRadius: css.radius, padding: '16px 20px', fontSize: '15px', fontFamily: "'DM Sans', sans-serif", color: css.ink, outline: 'none', boxSizing: 'border-box' }} />
         </div>
 
         {/* 04 背景資料 */}
-        <div style={style.section}>
-          <label style={style.label}>04 &nbsp; 請提供完整背景資料</label>
-          <textarea style={{ ...style.input, minHeight: '120px', resize: 'vertical' }} value={background} onChange={e => setBackground(e.target.value)} placeholder="例：餐廳位於中環，主打懷舊港式小炒，人均消費$150，最近獲米芝蓮推薦..." />
+        <div style={{ marginBottom: '48px' }}>
+          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>04</div>
+          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>請提供完整背景資料</div>
+          <textarea value={background} onChange={e => setBackground(e.target.value)}
+            placeholder="例：係老字號，成立1920年，主打豬油糕同老婆餅。近排被香港KOL大量推介，排隊人龍長達一小時..."
+            style={{ width: '100%', background: css.inputBg, border: `1px solid ${css.border}`, borderRadius: css.radius, padding: '16px 20px', fontSize: '15px', fontFamily: "'DM Sans', sans-serif", color: css.ink, outline: 'none', minHeight: '130px', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box' }} />
         </div>
 
+        <div style={{ height: '1px', background: css.border, margin: '0 0 52px' }} />
+
         {/* 05 Hook */}
-        <div style={style.section}>
-          <label style={style.label}>05 &nbsp; Hook 風格</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            {HOOK_STYLES.map(h => (
-              <button key={h.id} onClick={() => setHookStyle(h.label)} style={{
-                padding: '14px 16px', border: '1px solid', cursor: 'pointer', textAlign: 'left', fontFamily: 'EB Garamond, serif',
-                borderColor: hookStyle === h.label ? '#1a1a1a' : '#e0ddd6',
-                backgroundColor: hookStyle === h.label ? '#1a1a1a' : 'transparent',
-                color: hookStyle === h.label ? '#F5F2EC' : '#1a1a1a',
-              }}>
-                <div style={{ fontSize: '14px', marginBottom: '4px' }}>{h.label}</div>
-                <div style={{ fontSize: '12px', opacity: 0.7 }}>{h.desc}</div>
-              </button>
-            ))}
+        <div style={{ marginBottom: '48px' }}>
+          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>05</div>
+          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>Hook 風格</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '10px' }}>
+            {HOOKS.map(h => <StyleCard key={h.c} item={h} selected={selH === h.c} onSelect={() => setSelH(h.c)} />)}
           </div>
         </div>
 
         {/* 06 轉場 */}
-        <div style={style.section}>
-          <label style={style.label}>06 &nbsp; 轉場風格</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            {TRANSITION_STYLES.map(t => (
-              <button key={t.id} onClick={() => setTransitionStyle(t.label)} style={{
-                padding: '14px 16px', border: '1px solid', cursor: 'pointer', textAlign: 'left', fontFamily: 'EB Garamond, serif',
-                borderColor: transitionStyle === t.label ? '#1a1a1a' : '#e0ddd6',
-                backgroundColor: transitionStyle === t.label ? '#1a1a1a' : 'transparent',
-                color: transitionStyle === t.label ? '#F5F2EC' : '#1a1a1a',
-              }}>
-                <div style={{ fontSize: '14px', marginBottom: '4px' }}>{t.label}</div>
-                <div style={{ fontSize: '12px', opacity: 0.7 }}>{t.desc}</div>
-              </button>
-            ))}
+        <div style={{ marginBottom: '48px' }}>
+          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>06</div>
+          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>轉場風格</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '10px' }}>
+            {TRANS.map(t => <StyleCard key={t.c} item={t} selected={selT === t.c} onSelect={() => setSelT(t.c)} />)}
           </div>
         </div>
 
         {/* 07 Ending */}
-        <div style={style.section}>
-          <label style={style.label}>07 &nbsp; Ending 風格</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            {ENDING_STYLES.map(e => (
-              <button key={e.id} onClick={() => setEndingStyle(e.label)} style={{
-                padding: '14px 16px', border: '1px solid', cursor: 'pointer', textAlign: 'left', fontFamily: 'EB Garamond, serif',
-                borderColor: endingStyle === e.label ? '#1a1a1a' : '#e0ddd6',
-                backgroundColor: endingStyle === e.label ? '#1a1a1a' : 'transparent',
-                color: endingStyle === e.label ? '#F5F2EC' : '#1a1a1a',
-              }}>
-                <div style={{ fontSize: '14px', marginBottom: '4px' }}>{e.label}</div>
-                <div style={{ fontSize: '12px', opacity: 0.7 }}>{e.desc}</div>
-              </button>
-            ))}
+        <div style={{ marginBottom: '48px' }}>
+          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>07</div>
+          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>Ending 風格</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '10px' }}>
+            {ENDS.map(e => <StyleCard key={e.c} item={e} selected={selE === e.c} onSelect={() => setSelE(e.c)} />)}
           </div>
         </div>
 
         {/* 生成按鈕 */}
-        <button onClick={generateScript} disabled={loading} style={{
-          width: '100%', padding: '16px', border: '1px solid #1a1a1a',
-          backgroundColor: loading ? '#e0ddd6' : '#1a1a1a',
-          color: loading ? '#888' : '#F5F2EC',
-          fontSize: '15px', fontFamily: 'EB Garamond, serif', cursor: loading ? 'not-allowed' : 'pointer',
-          letterSpacing: '0.1em', marginBottom: '40px',
+        <button onClick={generate} disabled={loading} style={{
+          width: '100%', padding: '18px', borderRadius: css.radius, border: 'none',
+          background: loading ? css.ink3 : css.ink, color: css.bg,
+          fontSize: '15px', fontFamily: "'DM Sans', sans-serif", fontWeight: 500,
+          cursor: loading ? 'not-allowed' : 'pointer', marginTop: '8px',
         }}>
-          {loading ? '生成中...' : '生成 Script'}
+          {loading ? '正在生成，約需 15 秒...' : '生成 Script'}
         </button>
 
-        {/* Script 輸出 */}
+        {error && (
+          <div style={{ marginTop: '14px', padding: '14px 18px', borderRadius: css.radius, background: 'rgba(180,60,60,.08)', border: '1px solid rgba(180,60,60,.2)', color: '#8b3333', fontSize: '13px' }}>
+            {error}
+          </div>
+        )}
+
+        {/* 輸出結果 */}
         {script && (
-          <div style={{ borderTop: '1px solid #e0ddd6', paddingTop: '40px' }}>
-            <label style={style.label}>生成結果</label>
-            <div style={{ backgroundColor: '#fff', padding: '24px', border: '1px solid #e0ddd6', whiteSpace: 'pre-wrap', fontSize: '15px', lineHeight: '1.8', marginBottom: '16px' }}>
-              {script}
+          <div style={{ marginTop: '56px' }}>
+            <div style={{ fontSize: '11px', letterSpacing: '.1em', textTransform: 'uppercase', color: css.ink3, marginBottom: '16px' }}>
+              {[brand, industry, topic].filter(Boolean).join('  ·  ')}
             </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.65)', border: `1px solid ${css.border}`, borderRadius: css.radius, padding: '32px 36px' }}>
+              <div style={{ fontSize: '14px', lineHeight: 1.95, color: css.ink, whiteSpace: 'pre-wrap', fontFamily: "'DM Sans', sans-serif" }}>
+                {script}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button onClick={copyScript} style={{
-                flex: 1, padding: '12px', border: '1px solid #1a1a1a', backgroundColor: 'transparent',
-                color: '#1a1a1a', fontSize: '14px', fontFamily: 'EB Garamond, serif', cursor: 'pointer',
-              }}>
-                {copied ? '已複製！' : '複製 Script'}
-              </button>
-              <button onClick={generateScript} style={{
-                flex: 1, padding: '12px', border: '1px solid #e0ddd6', backgroundColor: 'transparent',
-                color: '#888', fontSize: '14px', fontFamily: 'EB Garamond, serif', cursor: 'pointer',
-              }}>
-                重新生成
-              </button>
+                fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
+                borderRadius: '99px', border: `1px solid ${css.ink}`, background: css.ink, color: css.bg, cursor: 'pointer',
+              }}>{copied ? '已複製！' : '複製 Script'}</button>
+              <button onClick={generate} style={{
+                fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
+                borderRadius: '99px', border: `1px solid ${css.border2}`, background: 'transparent', color: css.ink2, cursor: 'pointer',
+              }}>重新生成</button>
             </div>
           </div>
         )}
