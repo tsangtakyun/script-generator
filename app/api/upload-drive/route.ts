@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const text = await res.text()
     
     // Apps Script 可能返回 HTML redirect，搵 JSON 部分
-    const jsonMatch = text.match(/\{.*\}/s)
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error('Invalid response from Apps Script')
     
     const data = JSON.parse(jsonMatch[0])
