@@ -37,7 +37,7 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
   const headerB64 = toBase64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
   const payloadB64 = toBase64Url(JSON.stringify({
     iss: clientEmail,
-    scope: 'https://www.googleapis.com/auth/drive.file',
+    scope: 'https://www.googleapis.com/auth/drive',
     aud: 'https://oauth2.googleapis.com/token',
     exp: now + 3600,
     iat: now,
