@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXeMeXgtA9rB3DyRG-3JaVEAC512Ls8Cje6h6DONyh3ADyJl5ClCzDHnnMTzD-clv59g/exec'
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLViMowhYw5lgsHx8eG0wHnhs4HnRYDrYbdeYgekls7mArfDRHazs1Hn1klqDqMvPu7w/exec'
 const SECRET = 'soon-bbo-2026'
 
 export async function POST(request: NextRequest) {
