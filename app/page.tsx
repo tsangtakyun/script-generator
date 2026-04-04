@@ -113,6 +113,9 @@ export default function ScriptGenerator() {
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [uploadDone, setUploadDone] = useState(false)
+  const [driveUrl, setDriveUrl] = useState('')
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
