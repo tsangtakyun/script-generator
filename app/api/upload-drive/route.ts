@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const fileName = `${title || 'Script'} — ${new Date().toLocaleDateString('zh-HK')}`
 
     // Step 1: 建立空 Google Doc
-    const createRes = await fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true', {
+    const createRes = await fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&enforceSingleParent=false', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
