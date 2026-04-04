@@ -288,16 +288,26 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
                 {script}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' }}>
               <button onClick={copyScript} style={{
                 fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
                 borderRadius: '99px', border: `1px solid ${css.ink}`, background: css.ink, color: css.bg, cursor: 'pointer',
               }}>{copied ? '已複製！' : '複製 Script'}</button>
+              <button onClick={uploadToDrive} disabled={uploading} style={{
+                fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
+                borderRadius: '99px', border: `1px solid ${uploading ? css.border2 : '#4a8a5c'}`,
+                background: uploading ? 'transparent' : '#4a8a5c', color: uploading ? css.ink3 : '#fff', cursor: uploading ? 'not-allowed' : 'pointer',
+              }}>{uploading ? '上傳中...' : uploadDone ? '✓ 已上傳 Drive' : '📁 上傳去 Drive'}</button>
               <button onClick={generate} style={{
                 fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
                 borderRadius: '99px', border: `1px solid ${css.border2}`, background: 'transparent', color: css.ink2, cursor: 'pointer',
               }}>重新生成</button>
             </div>
+            {driveUrl && (
+              <a href={driveUrl} target="_blank" rel="noopener" style={{
+                display: 'inline-block', marginTop: '12px', fontSize: '12px', color: '#4a8a5c', textDecoration: 'none',
+              }}>→ 喺 Google Drive 開啟</a>
+            )}
           </div>
         )}
       </div>
