@@ -8,14 +8,29 @@ export async function POST(request: NextRequest) {
   try {
     const { title, content } = await request.json()
 
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content, secret: SECRET }),
-      redirect: 'follow',
+    const params = new URLSearchParams({
+      title: title || 'Script',
+      content: content || '',
+      secret: SECRET,
     })
 
-    const data = await res.json()
+    const url = `${APPS_SCRIPT_URL}?${params.toString()}`
+
+    const res = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: {
+        'Accept': 'application/json',
+      },
+    })
+
+    const text = await res.text()
+    
+    // Apps Script 可能返回 HTML redirect，搵 JSON 部分
+    const jsonMatch = text.match(/\{.*\}/s)
+    if (!jsonMatch) throw new Error('Invalid response from Apps Script')
+    
+    const data = JSON.parse(jsonMatch[0])
     if (data.error) throw new Error(data.error)
 
     return NextResponse.json({ success: true, url: data.url, id: data.id })
