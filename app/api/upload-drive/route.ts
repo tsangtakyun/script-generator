@@ -8,31 +8,32 @@ export async function POST(request: NextRequest) {
   try {
     const { title, content } = await request.json()
 
-    const params = new URLSearchParams({
-      title: title || 'Script',
-      content: content || '',
-      secret: SECRET,
-    })
-
-    const url = `${APPS_SCRIPT_URL}?${params.toString()}`
-
-    const res = await fetch(url, {
-      method: 'GET',
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
       redirect: 'follow',
       headers: {
-        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
+      body: new URLSearchParams({
+        title: title || 'Script',
+        content: content || '',
+        secret: SECRET,
+      }).toString(),
     })
 
     const text = await res.text()
+    console.log('Apps Script response:', text.substring(0, 500))
     
-    // Apps Script 可能返回 HTML redirect，搵 JSON 部分
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('Invalid response from Apps Script')
-    
-    const data = JSON.parse(jsonMatch[0])
-    if (data.error) throw new Error(data.error)
+    let data
+    try {
+      data = JSON.parse(text)
+    } catch {
+      const jsonMatch = text.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) throw new Error('Cannot parse response: ' + text.substring(0, 200))
+      data = JSON.parse(jsonMatch[0])
+    }
 
+    if (data.error) throw new Error(data.error)
     return NextResponse.json({ success: true, url: data.url, id: data.id })
 
   } catch (error: any) {
