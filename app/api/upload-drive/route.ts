@@ -82,7 +82,7 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
     new TextEncoder().encode(signingInput)
   )
 
-  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+  const sigB64 = btoa(Array.from(new Uint8Array(signature)).map(b => String.fromCharCode(b)).join(''))
     .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
 
   const jwt = `${signingInput}.${sigB64}`
