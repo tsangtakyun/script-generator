@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const INDUSTRIES = ['飲食', '旅遊', '美妝', '活動', '好物分享', '生活', '文化', '科技']
 
@@ -113,6 +113,14 @@ export default function ScriptGenerator() {
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const topicParam = params.get('topic')
+    const backgroundParam = params.get('background')
+    if (topicParam) setTopic(topicParam)
+    if (backgroundParam) setBackground(backgroundParam)
+  }, [])
 
   const generate = async () => {
     if (!topic.trim()) return
