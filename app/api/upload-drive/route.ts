@@ -10,23 +10,39 @@ export async function POST(request: NextRequest) {
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID!
     const token = await getAccessToken(clientEmail, privateKey)
     const fileName = `${title || 'Script'} — ${new Date().toLocaleDateString('zh-HK')}`
-    const metadata = JSON.stringify({
-      name: fileName,
-      mimeType: 'application/vnd.google-apps.document',
-      parents: [folderId],
-    })
-    const body = `--boundary123\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--boundary123\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n${content}\r\n--boundary123--`
-    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+
+    // Step 1: 建立空 Google Doc
+    const createRes = await fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/related; boundary=boundary123',
+        'Content-Type': 'application/json',
       },
-      body,
+      body: JSON.stringify({
+        name: fileName,
+        mimeType: 'application/vnd.google-apps.document',
+        parents: [folderId],
+      }),
     })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error?.message || 'Upload failed')
-    return NextResponse.json({ success: true, url: `https://docs.google.com/document/d/${data.id}/edit`, id: data.id })
+
+    const createData = await createRes.json()
+    if (!createRes.ok) throw new Error(createData.error?.message || 'Create failed')
+
+    const fileId = createData.id
+
+    // Step 2: 寫入內容
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media&supportsAllDrives=true`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'text/plain; charset=UTF-8',
+      },
+      body: content,
+    })
+
+    const fileUrl = `https://docs.google.com/document/d/${fileId}/edit`
+    return NextResponse.json({ success: true, url: fileUrl, id: fileId })
+
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
@@ -49,15 +65,12 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
     .replace(/\s/g, '')
   const binaryKey = Uint8Array.from(atob(keyData), (c) => c.charCodeAt(0))
   const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    binaryKey.buffer,
+    'pkcs8', binaryKey.buffer,
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign']
+    false, ['sign']
   )
   const signature = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    cryptoKey,
+    'RSASSA-PKCS1-v1_5', cryptoKey,
     new TextEncoder().encode(signingInput)
   )
   const sigArray = Array.from(new Uint8Array(signature))
@@ -72,7 +85,7 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
     }),
   })
   const tokenData = await tokenRes.json()
-  if (!tokenData.access_token) throw new Error('Cannot get access token')
+  if (!tokenData.access_token) throw new Error('Cannot get access token: ' + JSON.stringify(tokenData))
   return tokenData.access_token
 }
 
