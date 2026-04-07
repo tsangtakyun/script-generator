@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase'
 
 const INDUSTRIES = ['飲食', '旅遊', '美妝', '活動', '好物分享', '生活', '文化', '科技']
 
@@ -43,9 +44,25 @@ type StyleMemoryEntry = {
   styleRules: string[]
   bannedTone: string[]
   winningTouches: string[]
+  aiDraft?: string
+  qcFinal?: string
 }
 
 const STYLE_MEMORY_KEY = 'soon-script-style-memory-v1'
+
+function normalizeStyleMemoryRow(row: any): StyleMemoryEntry {
+  return {
+    id: row.id,
+    topic: row.topic || '',
+    createdAt: row.created_at || new Date().toISOString(),
+    editSummary: row.edit_summary || '',
+    styleRules: Array.isArray(row.style_rules) ? row.style_rules : [],
+    bannedTone: Array.isArray(row.banned_tone) ? row.banned_tone : [],
+    winningTouches: Array.isArray(row.winning_touches) ? row.winning_touches : [],
+    aiDraft: row.ai_draft || '',
+    qcFinal: row.qc_final || '',
+  }
+}
 
 function buildSystem(styleMemoryText?: string) {
   return `你係廣東話短片 script 寫手，幫 content creator 寫 IG Reel / YouTube Short。
@@ -134,6 +151,7 @@ const css = {
 }
 
 export default function ScriptGenerator() {
+  const supabase = createClient()
   const [brand, setBrand] = useState('')
   const [industry, setIndustry] = useState('飲食')
   const [topic, setTopic] = useState('')
@@ -148,6 +166,7 @@ export default function ScriptGenerator() {
   const [styleRulesPreview, setStyleRulesPreview] = useState<string[]>([])
   const [analyzingEdits, setAnalyzingEdits] = useState(false)
   const [styleSaved, setStyleSaved] = useState(false)
+  const [styleStorageMode, setStyleStorageMode] = useState<'local' | 'supabase'>('local')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [copiedQc, setCopiedQc] = useState(false)
@@ -167,14 +186,69 @@ export default function ScriptGenerator() {
   }, [])
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STYLE_MEMORY_KEY)
-      if (!raw) return
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) setStyleMemory(parsed)
-    } catch {
-      // ignore corrupt local memory
+    const bootstrapStyleMemory = async () => {
+      let localEntries: StyleMemoryEntry[] = []
+      try {
+        const raw = window.localStorage.getItem(STYLE_MEMORY_KEY)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          if (Array.isArray(parsed)) localEntries = parsed
+        }
+      } catch {
+        // ignore corrupt local memory
+      }
+
+      if (localEntries.length > 0) setStyleMemory(localEntries)
+
+      try {
+        const { data: authData } = await supabase.auth.getUser()
+        const user = authData.user
+        if (!user) return
+
+        const { data, error } = await supabase
+          .from('style_memories')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(30)
+
+        if (error) throw error
+
+        if (Array.isArray(data) && data.length > 0) {
+          setStyleMemory(data.map(normalizeStyleMemoryRow))
+          setStyleStorageMode('supabase')
+          return
+        }
+
+        if (localEntries.length > 0) {
+          const payload = localEntries.slice(0, 30).map(entry => ({
+            user_id: user.id,
+            topic: entry.topic,
+            edit_summary: entry.editSummary,
+            style_rules: entry.styleRules,
+            banned_tone: entry.bannedTone,
+            winning_touches: entry.winningTouches,
+            ai_draft: entry.aiDraft || '',
+            qc_final: entry.qcFinal || '',
+            created_at: entry.createdAt,
+          }))
+
+          const { data: inserted, error: insertError } = await supabase
+            .from('style_memories')
+            .insert(payload)
+            .select('*')
+
+          if (insertError) throw insertError
+          if (Array.isArray(inserted) && inserted.length > 0) {
+            setStyleMemory(inserted.map(normalizeStyleMemoryRow))
+            setStyleStorageMode('supabase')
+          }
+        }
+      } catch {
+        setStyleStorageMode('local')
+      }
     }
+
+    bootstrapStyleMemory()
   }, [])
 
   const generate = async () => {
@@ -278,10 +352,45 @@ ${qcScript}
         styleRules: Array.isArray(parsed.styleRules) ? parsed.styleRules : [],
         bannedTone: Array.isArray(parsed.bannedTone) ? parsed.bannedTone : [],
         winningTouches: Array.isArray(parsed.winningTouches) ? parsed.winningTouches : [],
+        aiDraft: script,
+        qcFinal: qcScript,
       }
       const nextMemory = [nextEntry, ...styleMemory].slice(0, 30)
       setStyleMemory(nextMemory)
       window.localStorage.setItem(STYLE_MEMORY_KEY, JSON.stringify(nextMemory))
+
+      try {
+        const { data: authData } = await supabase.auth.getUser()
+        const user = authData.user
+        if (user) {
+          const { data: inserted, error: insertError } = await supabase
+            .from('style_memories')
+            .insert({
+              user_id: user.id,
+              topic: nextEntry.topic,
+              edit_summary: nextEntry.editSummary,
+              style_rules: nextEntry.styleRules,
+              banned_tone: nextEntry.bannedTone,
+              winning_touches: nextEntry.winningTouches,
+              ai_draft: nextEntry.aiDraft || '',
+              qc_final: nextEntry.qcFinal || '',
+              created_at: nextEntry.createdAt,
+            })
+            .select('*')
+            .single()
+
+          if (insertError) throw insertError
+          if (inserted) {
+            const remoteMemory = [normalizeStyleMemoryRow(inserted), ...styleMemory].slice(0, 30)
+            setStyleMemory(remoteMemory)
+            window.localStorage.setItem(STYLE_MEMORY_KEY, JSON.stringify(remoteMemory))
+            setStyleStorageMode('supabase')
+          }
+        }
+      } catch {
+        setStyleStorageMode('local')
+      }
+
       setStyleSaved(true)
     } catch (err: any) {
       setError('分析改稿規律失敗：' + err.message)
@@ -465,7 +574,7 @@ ${qcScript}
                     <div style={{ fontSize: '13px', color: css.ink2 }}>你改完呢版之後，上傳去 Drive 會以呢份為準。</div>
                   </div>
                   <div style={{ fontSize: '11px', color: styleSaved ? '#4a8a5c' : css.ink3 }}>
-                    {styleSaved ? '✓ 已加入 Style Memory' : `${styleMemory.length} 條 Style Memory`}
+                    {styleSaved ? '✓ 已加入 Style Memory' : `${styleMemory.length} 條 Style Memory`} · {styleStorageMode === 'supabase' ? 'Supabase' : 'Local'}
                   </div>
                 </div>
                 <textarea
