@@ -38,6 +38,7 @@ const ENDS = [
 
 type StyleMemoryEntry = {
   id: string
+  fingerprint: string
   topic: string
   createdAt: string
   editSummary: string
@@ -50,9 +51,32 @@ type StyleMemoryEntry = {
 
 const STYLE_MEMORY_KEY = 'soon-script-style-memory-v1'
 
+function makeFingerprint(topic: string, aiDraft: string, qcFinal: string) {
+  const source = `${topic}::${aiDraft}::${qcFinal}`
+  let hash = 0
+  for (let i = 0; i < source.length; i += 1) {
+    hash = (hash * 31 + source.charCodeAt(i)) >>> 0
+  }
+  return `sm_${hash.toString(16)}`
+}
+
+function mergeStyleMemories(entries: StyleMemoryEntry[]) {
+  const seen = new Set<string>()
+  return entries
+    .filter(entry => {
+      const key = entry.fingerprint || entry.id
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+    .slice(0, 30)
+}
+
 function normalizeStyleMemoryRow(row: any): StyleMemoryEntry {
   return {
     id: row.id,
+    fingerprint: row.fingerprint || `${row.id}`,
     topic: row.topic || '',
     createdAt: row.created_at || new Date().toISOString(),
     editSummary: row.edit_summary || '',
@@ -167,6 +191,8 @@ export default function ScriptGenerator() {
   const [analyzingEdits, setAnalyzingEdits] = useState(false)
   const [styleSaved, setStyleSaved] = useState(false)
   const [styleStorageMode, setStyleStorageMode] = useState<'local' | 'supabase'>('local')
+  const [styleSyncing, setStyleSyncing] = useState(false)
+  const [styleSyncMessage, setStyleSyncMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [copiedQc, setCopiedQc] = useState(false)
@@ -175,6 +201,60 @@ export default function ScriptGenerator() {
   const [uploadDone, setUploadDone] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
   const [importedFromIdea, setImportedFromIdea] = useState(false)
+
+  const persistLocalMemory = (entries: StyleMemoryEntry[]) => {
+    window.localStorage.setItem(STYLE_MEMORY_KEY, JSON.stringify(entries))
+    setStyleMemory(entries)
+  }
+
+  const syncEntriesToSupabase = async (entries: StyleMemoryEntry[]) => {
+    const { data: authData } = await supabase.auth.getUser()
+    const user = authData.user
+    if (!user) throw new Error('請先登入，先可以同步到 Supabase')
+
+    const payload = entries.map(entry => ({
+      user_id: user.id,
+      fingerprint: entry.fingerprint,
+      topic: entry.topic,
+      edit_summary: entry.editSummary,
+      style_rules: entry.styleRules,
+      banned_tone: entry.bannedTone,
+      winning_touches: entry.winningTouches,
+      ai_draft: entry.aiDraft || '',
+      qc_final: entry.qcFinal || '',
+      created_at: entry.createdAt,
+    }))
+
+    const { data, error } = await supabase
+      .from('style_memories')
+      .upsert(payload, { onConflict: 'user_id,fingerprint' })
+      .select('*')
+
+    if (error) throw error
+
+    const merged = mergeStyleMemories([
+      ...(Array.isArray(data) ? data.map(normalizeStyleMemoryRow) : []),
+      ...entries,
+    ])
+    persistLocalMemory(merged)
+    setStyleStorageMode('supabase')
+    return merged
+  }
+
+  const syncLocalMemoryToSupabase = async () => {
+    setStyleSyncing(true)
+    setStyleSyncMessage('')
+    try {
+      if (styleMemory.length === 0) throw new Error('目前冇 Style Memory 可同步')
+      await syncEntriesToSupabase(styleMemory)
+      setStyleSyncMessage('✓ Local Style Memory 已同步到 Supabase')
+    } catch (err: any) {
+      setStyleStorageMode('local')
+      setStyleSyncMessage(`同步失敗：${err.message}`)
+    } finally {
+      setStyleSyncing(false)
+    }
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -192,13 +272,18 @@ export default function ScriptGenerator() {
         const raw = window.localStorage.getItem(STYLE_MEMORY_KEY)
         if (raw) {
           const parsed = JSON.parse(raw)
-          if (Array.isArray(parsed)) localEntries = parsed
+          if (Array.isArray(parsed)) {
+            localEntries = parsed.map((entry: any) => ({
+              ...entry,
+              fingerprint: entry.fingerprint || makeFingerprint(entry.topic || '', entry.aiDraft || '', entry.qcFinal || ''),
+            }))
+          }
         }
       } catch {
         // ignore corrupt local memory
       }
 
-      if (localEntries.length > 0) setStyleMemory(localEntries)
+      if (localEntries.length > 0) setStyleMemory(mergeStyleMemories(localEntries))
 
       try {
         const { data: authData } = await supabase.auth.getUser()
@@ -214,34 +299,19 @@ export default function ScriptGenerator() {
         if (error) throw error
 
         if (Array.isArray(data) && data.length > 0) {
-          setStyleMemory(data.map(normalizeStyleMemoryRow))
+          const merged = mergeStyleMemories([...data.map(normalizeStyleMemoryRow), ...localEntries])
+          persistLocalMemory(merged)
           setStyleStorageMode('supabase')
+          if (localEntries.length > 0) {
+            await syncEntriesToSupabase(merged)
+            setStyleSyncMessage('✓ 已讀取 Supabase，並合併你本機既有記憶')
+          }
           return
         }
 
         if (localEntries.length > 0) {
-          const payload = localEntries.slice(0, 30).map(entry => ({
-            user_id: user.id,
-            topic: entry.topic,
-            edit_summary: entry.editSummary,
-            style_rules: entry.styleRules,
-            banned_tone: entry.bannedTone,
-            winning_touches: entry.winningTouches,
-            ai_draft: entry.aiDraft || '',
-            qc_final: entry.qcFinal || '',
-            created_at: entry.createdAt,
-          }))
-
-          const { data: inserted, error: insertError } = await supabase
-            .from('style_memories')
-            .insert(payload)
-            .select('*')
-
-          if (insertError) throw insertError
-          if (Array.isArray(inserted) && inserted.length > 0) {
-            setStyleMemory(inserted.map(normalizeStyleMemoryRow))
-            setStyleStorageMode('supabase')
-          }
+          await syncEntriesToSupabase(localEntries)
+          setStyleSyncMessage('✓ 已把本機 Style Memory 搬去 Supabase')
         }
       } catch {
         setStyleStorageMode('local')
@@ -346,6 +416,7 @@ ${qcScript}
       setStyleRulesPreview(Array.isArray(parsed.styleRules) ? parsed.styleRules : [])
       const nextEntry: StyleMemoryEntry = {
         id: `${Date.now()}`,
+        fingerprint: makeFingerprint(topic, script, qcScript),
         topic,
         createdAt: new Date().toISOString(),
         editSummary: parsed.editSummary || '',
@@ -355,40 +426,15 @@ ${qcScript}
         aiDraft: script,
         qcFinal: qcScript,
       }
-      const nextMemory = [nextEntry, ...styleMemory].slice(0, 30)
-      setStyleMemory(nextMemory)
-      window.localStorage.setItem(STYLE_MEMORY_KEY, JSON.stringify(nextMemory))
+      const nextMemory = mergeStyleMemories([nextEntry, ...styleMemory])
+      persistLocalMemory(nextMemory)
 
       try {
-        const { data: authData } = await supabase.auth.getUser()
-        const user = authData.user
-        if (user) {
-          const { data: inserted, error: insertError } = await supabase
-            .from('style_memories')
-            .insert({
-              user_id: user.id,
-              topic: nextEntry.topic,
-              edit_summary: nextEntry.editSummary,
-              style_rules: nextEntry.styleRules,
-              banned_tone: nextEntry.bannedTone,
-              winning_touches: nextEntry.winningTouches,
-              ai_draft: nextEntry.aiDraft || '',
-              qc_final: nextEntry.qcFinal || '',
-              created_at: nextEntry.createdAt,
-            })
-            .select('*')
-            .single()
-
-          if (insertError) throw insertError
-          if (inserted) {
-            const remoteMemory = [normalizeStyleMemoryRow(inserted), ...styleMemory].slice(0, 30)
-            setStyleMemory(remoteMemory)
-            window.localStorage.setItem(STYLE_MEMORY_KEY, JSON.stringify(remoteMemory))
-            setStyleStorageMode('supabase')
-          }
-        }
-      } catch {
+        await syncEntriesToSupabase([nextEntry, ...styleMemory])
+        setStyleSyncMessage('✓ 新增嘅 Style Memory 已同步到 Supabase')
+      } catch (err: any) {
         setStyleStorageMode('local')
+        setStyleSyncMessage(`暫時只存本機：${err.message}`)
       }
 
       setStyleSaved(true)
@@ -461,6 +507,39 @@ ${qcScript}
             已從 Idea Collection 帶入主題／背景資料，你可以喺生成前再微調。
           </div>
         )}
+        <div style={{
+          marginBottom: '20px',
+          padding: '12px 16px',
+          borderRadius: css.radius,
+          border: `1px solid ${styleStorageMode === 'supabase' ? css.border2 : css.border}`,
+          background: 'rgba(255,255,255,0.55)',
+          fontSize: '13px',
+          color: css.ink2,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span>
+              Style Memory 儲存位置：<strong>{styleStorageMode === 'supabase' ? 'Supabase' : 'Local'}</strong>
+            </span>
+            <button
+              onClick={syncLocalMemoryToSupabase}
+              disabled={styleSyncing}
+              style={{
+                cursor: styleSyncing ? 'not-allowed' : 'pointer',
+                fontSize: '12px',
+                fontFamily: "'DM Sans', sans-serif",
+                padding: '8px 14px',
+                borderRadius: '99px',
+                border: `1px solid ${css.border2}`,
+                color: css.ink,
+                background: 'transparent',
+                opacity: styleSyncing ? 0.5 : 1,
+              }}
+            >
+              {styleSyncing ? '同步中...' : '同步到 Supabase'}
+            </button>
+          </div>
+          {styleSyncMessage && <div style={{ marginTop: '8px', fontSize: '12px', color: css.ink3 }}>{styleSyncMessage}</div>}
+        </div>
         <div style={{ height: '1px', background: css.border, marginBottom: '52px' }} />
 
         {/* 01 品牌 */}

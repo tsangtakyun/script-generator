@@ -3,6 +3,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.style_memories (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
+  fingerprint text,
   topic text not null default '',
   edit_summary text not null default '',
   style_rules jsonb not null default '[]'::jsonb,
@@ -15,6 +16,16 @@ create table if not exists public.style_memories (
 
 create index if not exists style_memories_user_id_created_at_idx
   on public.style_memories (user_id, created_at desc);
+
+update public.style_memories
+set fingerprint = md5(coalesce(topic, '') || '|' || coalesce(ai_draft, '') || '|' || coalesce(qc_final, ''))
+where fingerprint is null or fingerprint = '';
+
+alter table public.style_memories
+alter column fingerprint set not null;
+
+create unique index if not exists style_memories_user_id_fingerprint_idx
+  on public.style_memories (user_id, fingerprint);
 
 alter table public.style_memories enable row level security;
 
