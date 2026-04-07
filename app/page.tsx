@@ -35,7 +35,19 @@ const ENDS = [
   { c: 'E7', n: '哲學收結', d: '最有重量，適合文化類' },
 ]
 
-function buildSystem() {
+type StyleMemoryEntry = {
+  id: string
+  topic: string
+  createdAt: string
+  editSummary: string
+  styleRules: string[]
+  bannedTone: string[]
+  winningTouches: string[]
+}
+
+const STYLE_MEMORY_KEY = 'soon-script-style-memory-v1'
+
+function buildSystem(styleMemoryText?: string) {
   return `你係廣東話短片 script 寫手，幫 content creator 寫 IG Reel / YouTube Short。
 廣東話口語，短句，坦白，唔oversell，每句有目的。
 
@@ -80,7 +92,33 @@ Ending：E1坦白留白｜E2直接回應開場｜E3真實力｜E4自嘲幽默｜
 
 【Ending】
 （一句）
-＋ 主持1-2句感想`
+＋ 主持1-2句感想
+
+${styleMemoryText ? `請額外遵守以下已驗證風格記憶：
+${styleMemoryText}` : ''}`
+}
+
+function buildStyleAnalysisSystem() {
+  return `你係內容總監，專門分析「AI 初稿」同「人手 QC 稿」之間嘅差異。
+請只輸出有效 JSON：
+{
+  "editSummary": "用繁體中文總結 2-3 句，說明今次主要改稿方向",
+  "styleRules": ["3-6條具體寫作規則"],
+  "bannedTone": ["2-5條不想再出現的AI語氣/寫法"],
+  "winningTouches": ["2-5條這次加得好的有趣位/人味處理"]
+}`
+}
+
+function splitScriptSections(raw: string) {
+  const sectionTitles = ['【Opening Hook】', '【背景 VO】', '【轉場】', '【實測內容】', '【Ending】']
+  const sections = sectionTitles.map((title, index) => {
+    const start = raw.indexOf(title)
+    if (start === -1) return null
+    const nextTitle = sectionTitles.slice(index + 1).map(t => raw.indexOf(t)).find(pos => pos !== -1 && pos > start) ?? raw.length
+    const content = raw.slice(start + title.length, nextTitle).trim()
+    return { title, content }
+  }).filter(Boolean) as { title: string; content: string }[]
+  return sections.length ? sections : [{ title: '完整 Script', content: raw.trim() }]
 }
 
 const css = {
@@ -104,12 +142,20 @@ export default function ScriptGenerator() {
   const [selT, setSelT] = useState('T1')
   const [selE, setSelE] = useState('E1')
   const [script, setScript] = useState('')
+  const [qcScript, setQcScript] = useState('')
+  const [styleMemory, setStyleMemory] = useState<StyleMemoryEntry[]>([])
+  const [editSummary, setEditSummary] = useState('')
+  const [styleRulesPreview, setStyleRulesPreview] = useState<string[]>([])
+  const [analyzingEdits, setAnalyzingEdits] = useState(false)
+  const [styleSaved, setStyleSaved] = useState(false)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [copiedQc, setCopiedQc] = useState(false)
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadDone, setUploadDone] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
+  const [importedFromIdea, setImportedFromIdea] = useState(false)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -117,19 +163,41 @@ export default function ScriptGenerator() {
     const backgroundParam = params.get('background')
     if (topicParam) setTopic(topicParam)
     if (backgroundParam) setBackground(backgroundParam)
+    if (topicParam || backgroundParam) setImportedFromIdea(true)
+  }, [])
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STYLE_MEMORY_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) setStyleMemory(parsed)
+    } catch {
+      // ignore corrupt local memory
+    }
   }, [])
 
   const generate = async () => {
     if (!topic.trim()) return
     setLoading(true)
     setScript('')
+    setQcScript('')
     setError('')
     setUploadDone(false)
     setDriveUrl('')
+    setEditSummary('')
+    setStyleRulesPreview([])
+    setStyleSaved(false)
 
     const h = HOOKS.find(x => x.c === selH)!
     const t = TRANS.find(x => x.c === selT)!
     const e = ENDS.find(x => x.c === selE)!
+
+    const learnedRules = styleMemory
+      .slice(0, 8)
+      .flatMap(entry => entry.styleRules.map(rule => `- ${rule}`))
+      .slice(0, 12)
+      .join('\n')
 
     const userMsg = `${brand ? `品牌：${brand}\n` : ''}類型：${industry}
 主題：${topic}
@@ -144,13 +212,15 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 2000,
-          system: buildSystem(),
+          system: buildSystem(learnedRules ? `你以往人手 QC 後沉澱出以下偏好規則，請盡量貼近：\n${learnedRules}` : ''),
           messages: [{ role: 'user', content: userMsg }]
         })
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error.message)
-      setScript(data.content?.[0]?.text || '')
+      const generated = data.content?.[0]?.text || ''
+      setScript(generated)
+      setQcScript(generated)
     } catch (err: any) {
       setError('出現錯誤：' + err.message)
     }
@@ -163,16 +233,73 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const copyQcScript = () => {
+    navigator.clipboard.writeText(qcScript || script)
+    setCopiedQc(true)
+    setTimeout(() => setCopiedQc(false), 2000)
+  }
+
+  const analyzeEdits = async () => {
+    if (!script.trim() || !qcScript.trim()) return
+    setAnalyzingEdits(true)
+    setError('')
+    try {
+      const prompt = `以下係同一條 script 的兩個版本。
+
+【AI 初稿】
+${script}
+
+【QC 最終稿】
+${qcScript}
+
+請分析我今次點樣由 AI 味改到更似真人寫，輸出 JSON。`
+
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1200,
+          system: buildStyleAnalysisSystem(),
+          messages: [{ role: 'user', content: prompt }]
+        })
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error.message || data.error)
+      const text = data.content?.[0]?.text || ''
+      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim())
+      setEditSummary(parsed.editSummary || '')
+      setStyleRulesPreview(Array.isArray(parsed.styleRules) ? parsed.styleRules : [])
+      const nextEntry: StyleMemoryEntry = {
+        id: `${Date.now()}`,
+        topic,
+        createdAt: new Date().toISOString(),
+        editSummary: parsed.editSummary || '',
+        styleRules: Array.isArray(parsed.styleRules) ? parsed.styleRules : [],
+        bannedTone: Array.isArray(parsed.bannedTone) ? parsed.bannedTone : [],
+        winningTouches: Array.isArray(parsed.winningTouches) ? parsed.winningTouches : [],
+      }
+      const nextMemory = [nextEntry, ...styleMemory].slice(0, 30)
+      setStyleMemory(nextMemory)
+      window.localStorage.setItem(STYLE_MEMORY_KEY, JSON.stringify(nextMemory))
+      setStyleSaved(true)
+    } catch (err: any) {
+      setError('分析改稿規律失敗：' + err.message)
+    }
+    setAnalyzingEdits(false)
+  }
+
   const uploadToDrive = async () => {
-    if (!script) return
+    const finalContent = qcScript || script
+    if (!finalContent) return
     setUploading(true)
     setUploadDone(false)
     try {
-      const title = `${brand || '未命名'} — ${topic || 'Script'}`
+      const title = `${brand || '未命名'} — ${topic || 'Script'}${qcScript ? ' (QC)' : ''}`
       const res = await fetch('/api/upload-drive', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content: script }),
+        body: JSON.stringify({ title, content: finalContent }),
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
@@ -212,6 +339,19 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '52px', fontWeight: 400, lineHeight: 1.05, color: css.ink, marginBottom: '36px' }}>
           Script Generator <span style={{ color: css.ink3, fontStyle: 'italic' }}>/ Beta</span>
         </h1>
+        {importedFromIdea && (
+          <div style={{
+            marginBottom: '20px',
+            padding: '12px 16px',
+            borderRadius: css.radius,
+            border: `1px solid ${css.border2}`,
+            background: 'rgba(255,255,255,0.55)',
+            fontSize: '13px',
+            color: css.ink2,
+          }}>
+            已從 Idea Collection 帶入主題／背景資料，你可以喺生成前再微調。
+          </div>
+        )}
         <div style={{ height: '1px', background: css.border, marginBottom: '52px' }} />
 
         {/* 01 品牌 */}
@@ -305,22 +445,70 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
             <div style={{ fontSize: '11px', letterSpacing: '.1em', textTransform: 'uppercase' as const, color: css.ink3, marginBottom: '16px' }}>
               {[brand, industry, topic].filter(Boolean).join('  ·  ')}
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.65)', border: `1px solid ${css.border}`, borderRadius: css.radius, padding: '32px 36px' }}>
-              <div style={{ fontSize: '14px', lineHeight: 1.95, color: css.ink, whiteSpace: 'pre-wrap' as const, fontFamily: "'DM Sans', sans-serif" }}>
-                {script}
+            <div style={{ display: 'grid', gap: '16px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.65)', border: `1px solid ${css.border}`, borderRadius: css.radius, padding: '24px 28px' }}>
+                <div style={{ fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase' as const, color: css.ink3, marginBottom: '14px' }}>AI 初稿</div>
+                <div style={{ display: 'grid', gap: '14px' }}>
+                  {splitScriptSections(script).map(section => (
+                    <div key={section.title} style={{ borderBottom: `1px solid ${css.border}`, paddingBottom: '14px' }}>
+                      <div style={{ fontSize: '16px', fontWeight: 500, color: css.ink, marginBottom: '8px' }}>{section.title}</div>
+                      <div style={{ fontSize: '14px', lineHeight: 1.9, color: css.ink, whiteSpace: 'pre-wrap' as const }}>{section.content}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255,255,255,0.78)', border: `1px solid ${css.border2}`, borderRadius: css.radius, padding: '24px 28px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' as const }}>
+                  <div>
+                    <div style={{ fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase' as const, color: css.ink3, marginBottom: '6px' }}>QC 最終稿</div>
+                    <div style={{ fontSize: '13px', color: css.ink2 }}>你改完呢版之後，上傳去 Drive 會以呢份為準。</div>
+                  </div>
+                  <div style={{ fontSize: '11px', color: styleSaved ? '#4a8a5c' : css.ink3 }}>
+                    {styleSaved ? '✓ 已加入 Style Memory' : `${styleMemory.length} 條 Style Memory`}
+                  </div>
+                </div>
+                <textarea
+                  value={qcScript}
+                  onChange={e => setQcScript(e.target.value)}
+                  style={{ ...inputStyle, minHeight: '320px', resize: 'vertical' as const, lineHeight: 1.8, background: 'rgba(255,255,255,0.9)' }}
+                />
               </div>
             </div>
+
+            {(editSummary || styleRulesPreview.length > 0) && (
+              <div style={{ marginTop: '18px', background: 'rgba(255,255,255,0.55)', border: `1px solid ${css.border}`, borderRadius: css.radius, padding: '22px 24px' }}>
+                <div style={{ fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase' as const, color: css.ink3, marginBottom: '10px' }}>Style Memory</div>
+                {editSummary && (
+                  <div style={{ fontSize: '14px', lineHeight: 1.8, color: css.ink2, marginBottom: '12px' }}>{editSummary}</div>
+                )}
+                {styleRulesPreview.length > 0 && (
+                  <ul style={{ paddingLeft: '18px', color: css.ink, lineHeight: 1.8, fontSize: '14px' }}>
+                    {styleRulesPreview.map(rule => <li key={rule}>{rule}</li>)}
+                  </ul>
+                )}
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' as const }}>
               <button onClick={copyScript} style={{
                 fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
                 borderRadius: '99px', border: `1px solid ${css.ink}`, background: css.ink, color: css.bg, cursor: 'pointer',
               }}>{copied ? '已複製！' : '複製 Script'}</button>
+              <button onClick={copyQcScript} style={{
+                fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
+                borderRadius: '99px', border: `1px solid ${css.border2}`, background: 'transparent', color: css.ink2, cursor: 'pointer',
+              }}>{copiedQc ? '已複製 QC 稿！' : '複製 QC 稿'}</button>
+              <button onClick={analyzeEdits} disabled={analyzingEdits || !qcScript.trim()} style={{
+                fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
+                borderRadius: '99px', border: `1px solid ${css.border2}`, background: css.inputBg, color: css.ink, cursor: analyzingEdits ? 'not-allowed' : 'pointer',
+              }}>{analyzingEdits ? '分析改稿中...' : '分析我改咗咩'}</button>
               <button onClick={uploadToDrive} disabled={uploading} style={{
                 fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
                 borderRadius: '99px', border: `1px solid ${uploading ? css.border2 : '#4a8a5c'}`,
                 background: uploading ? 'transparent' : uploadDone ? '#4a8a5c' : '#4a8a5c',
                 color: uploading ? css.ink3 : '#fff', cursor: uploading ? 'not-allowed' : 'pointer',
-              }}>{uploading ? '上傳中...' : uploadDone ? '✓ 已上傳 Drive' : '📁 上傳去 Drive'}</button>
+              }}>{uploading ? '上傳中...' : uploadDone ? '✓ 已上傳 QC 稿到 Drive' : '📁 上傳 QC 稿去 Drive'}</button>
               <button onClick={generate} style={{
                 fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
                 borderRadius: '99px', border: `1px solid ${css.border2}`, background: 'transparent', color: css.ink2, cursor: 'pointer',
