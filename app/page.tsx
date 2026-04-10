@@ -556,10 +556,7 @@ ${qcScript}
                   將題材、背景資料、Hook、轉場與結尾結構放進同一個內部 board，快速生成可直接進入 QC 的短片劇本。
                 </div>
               </div>
-              <div style={{ display: 'grid', gap: '10px', minWidth: '240px' }}>
-                <button onClick={generate} disabled={loading} style={{ cursor: loading ? 'not-allowed' : 'pointer', padding: '14px 18px', borderRadius: '16px', border: '1px solid rgba(130,126,255,0.48)', background: 'linear-gradient(135deg,#7b61ff,#5e8bff)', color: '#fff', fontSize: '14px', fontWeight: 700, boxShadow: '0 18px 36px rgba(93, 104, 255, 0.28)' }}>
-                  {loading ? '正在生成初稿…' : '生成劇本初稿'}
-                </button>
+              <div style={{ minWidth: '240px' }}>
                 <div style={{ padding: '12px 14px', borderRadius: '16px', background: importedFromIdea ? 'rgba(111,107,255,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${importedFromIdea ? css.border2 : css.border}`, fontSize: '13px', color: css.ink2 }}>
                   {importedFromIdea ? '已從題材工作台帶入主題與背景，可直接微調後生成。' : '可直接手動輸入內容需求，建立新一輪劇本。'}
                 </div>
@@ -616,6 +613,14 @@ ${qcScript}
                   <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>Ending 風格</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '10px' }}>
                     {ENDS.map(e => <StyleCard key={e.c} item={e} selected={selE === e.c} onSelect={() => setSelE(e.c)} />)}
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gap: '10px' }}>
+                  <button onClick={generate} disabled={loading} style={{ cursor: loading ? 'not-allowed' : 'pointer', padding: '15px 18px', borderRadius: '16px', border: '1px solid rgba(130,126,255,0.48)', background: 'linear-gradient(135deg,#7b61ff,#5e8bff)', color: '#fff', fontSize: '15px', fontWeight: 700, boxShadow: '0 18px 36px rgba(93, 104, 255, 0.28)' }}>
+                    {loading ? '正在生成初稿…' : '生成劇本初稿'}
+                  </button>
+                  <div style={{ fontSize: '13px', color: css.ink3, lineHeight: 1.7 }}>
+                    填完以上設定之後，再生成初稿會最準確。
                   </div>
                 </div>
               </div>
