@@ -640,29 +640,35 @@ ${qcScript}
                 {[brand, industry, topic].filter(Boolean).join('  ·  ')}
               </div>
 
-              <div style={{ ...railCard, padding: '24px 26px' }}>
-                <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '16px' }}>AI 初稿</div>
-                <div style={{ display: 'grid', gap: '14px' }}>
-                  {splitScriptSections(script).map(section => (
-                    <div key={section.title} style={{ borderBottom: `1px solid ${css.border}`, paddingBottom: '14px' }}>
-                      <div style={{ fontSize: '16px', fontWeight: 600, color: css.ink, marginBottom: '8px' }}>{section.title}</div>
-                      <div style={{ fontSize: '14px', lineHeight: 1.9, color: css.ink2, whiteSpace: 'pre-wrap' as const }}>{section.content}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               <div style={{ ...railCard, padding: '24px 26px', border: `1px solid ${css.border2}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'grid', gap: '24px' }}>
                   <div>
-                    <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '6px' }}>QC 最終稿</div>
-                    <div style={{ fontSize: '13px', color: css.ink2 }}>修完呢版之後，上傳到 Drive 會以呢份為準。</div>
+                    <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '16px' }}>AI 初稿</div>
+                    <div style={{ display: 'grid', gap: '14px' }}>
+                      {splitScriptSections(script).map(section => (
+                        <div key={section.title} style={{ borderBottom: `1px solid ${css.border}`, paddingBottom: '14px' }}>
+                          <div style={{ fontSize: '16px', fontWeight: 600, color: css.ink, marginBottom: '8px' }}>{section.title}</div>
+                          <div style={{ fontSize: '14px', lineHeight: 1.9, color: css.ink2, whiteSpace: 'pre-wrap' as const }}>{section.content}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '12px', color: styleSaved ? '#8df0b4' : css.ink3 }}>
-                    {styleSaved ? '✓ 已加入 Style Memory' : `${styleMemory.length} 條 Style Memory`} · {styleStorageMode === 'supabase' ? 'Supabase' : 'Local'}
+
+                  <div style={{ height: '1px', background: css.border }} />
+
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                      <div>
+                        <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '6px' }}>QC 最終稿</div>
+                        <div style={{ fontSize: '13px', color: css.ink2 }}>沿住上面初稿一路往下修，完成後可直接上傳到 Drive。</div>
+                      </div>
+                      <div style={{ fontSize: '12px', color: styleSaved ? '#8df0b4' : css.ink3 }}>
+                        {styleSaved ? '✓ 已加入 Style Memory' : `${styleMemory.length} 條 Style Memory`} · {styleStorageMode === 'supabase' ? 'Supabase' : 'Local'}
+                      </div>
+                    </div>
+                    <textarea value={qcScript} onChange={e => setQcScript(e.target.value)} style={{ ...inputStyle, minHeight: '340px', resize: 'vertical' as const, lineHeight: 1.8, background: 'rgba(255,255,255,0.06)' }} />
                   </div>
                 </div>
-                <textarea value={qcScript} onChange={e => setQcScript(e.target.value)} style={{ ...inputStyle, minHeight: '340px', resize: 'vertical' as const, lineHeight: 1.8, background: 'rgba(255,255,255,0.06)' }} />
               </div>
 
               {(editSummary || styleRulesPreview.length > 0) && (
