@@ -569,7 +569,7 @@ ${qcScript}
 
           <section className="workspace-grid">
             <div style={{ ...railCard, padding: '26px' }}>
-              <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '18px' }}>內容設定</div>
+              <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '18px' }}>劇本設定</div>
               <div style={{ display: 'grid', gap: '26px' }}>
                 <div>
                   <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>01</div>
@@ -597,12 +597,6 @@ ${qcScript}
                   <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>完整背景資料</div>
                   <textarea value={background} onChange={e => setBackground(e.target.value)} placeholder="例：係老字號，成立 1920 年，主打豬油糕同老婆餅…" style={{ ...inputStyle, minHeight: '180px', resize: 'vertical' as const, lineHeight: 1.7 }} />
                 </div>
-              </div>
-            </div>
-
-            <div style={{ ...railCard, padding: '26px' }}>
-              <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '18px' }}>語氣骨架</div>
-              <div style={{ display: 'grid', gap: '26px' }}>
                 <div>
                   <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>05</div>
                   <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>Hook 風格</div>
@@ -781,7 +775,7 @@ ${qcScript}
         }
         .workspace-grid {
           display: grid;
-          grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+          grid-template-columns: minmax(0, 1fr);
           gap: 20px;
         }
         @media (max-width: 1280px) {
