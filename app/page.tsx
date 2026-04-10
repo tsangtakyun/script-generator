@@ -163,15 +163,15 @@ function splitScriptSections(raw: string) {
 }
 
 const css = {
-  bg: '#EEEADE',
-  ink: '#1a1a18',
-  ink2: '#5a5a52',
-  ink3: '#9a9a8e',
-  border: 'rgba(26,26,24,0.13)',
-  border2: 'rgba(26,26,24,0.28)',
-  inputBg: 'rgba(255,255,255,0.55)',
-  inputFocus: 'rgba(255,255,255,0.85)',
-  radius: '8px',
+  bg: '#171a2f',
+  ink: '#f5f7ff',
+  ink2: '#c9cdec',
+  ink3: '#8e94ba',
+  border: 'rgba(255,255,255,0.08)',
+  border2: 'rgba(128,118,255,0.28)',
+  inputBg: 'rgba(255,255,255,0.05)',
+  inputFocus: 'rgba(111,107,255,0.14)',
+  radius: '18px',
 }
 
 export default function ScriptGenerator() {
@@ -485,231 +485,323 @@ ${qcScript}
     fontFamily: "'DM Sans', sans-serif", color: css.ink, outline: 'none', boxSizing: 'border-box' as const,
   }
 
+  const selectedHook = HOOKS.find(x => x.c === selH)
+  const selectedTrans = TRANS.find(x => x.c === selT)
+  const selectedEnd = ENDS.find(x => x.c === selE)
+  const setupProgress = [brand.trim(), industry.trim(), topic.trim(), background.trim(), selH, selT, selE].filter(Boolean).length
+  const railCard = {
+    background: 'rgba(34, 38, 68, 0.88)',
+    border: `1px solid ${css.border}`,
+    borderRadius: '22px',
+    padding: '20px',
+    boxShadow: '0 18px 40px rgba(4, 6, 20, 0.26)',
+  } as const
+
   return (
     <div style={{ backgroundColor: css.bg, color: css.ink, fontFamily: "'DM Sans', sans-serif", minHeight: '100vh' }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
-      <div style={{ maxWidth: '780px', margin: '0 auto', padding: '56px 40px 100px' }}>
-
-        <div style={{ fontSize: '11px', letterSpacing: '.17em', textTransform: 'uppercase' as const, color: css.ink3, marginBottom: '14px' }}>AI Media Content Creation</div>
-        <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '52px', fontWeight: 400, lineHeight: 1.05, color: css.ink, marginBottom: '36px' }}>
-          Script Generator <span style={{ color: css.ink3, fontStyle: 'italic' }}>/ Beta</span>
-        </h1>
-        {importedFromIdea && (
-          <div style={{
-            marginBottom: '20px',
-            padding: '12px 16px',
-            borderRadius: css.radius,
-            border: `1px solid ${css.border2}`,
-            background: 'rgba(255,255,255,0.55)',
-            fontSize: '13px',
-            color: css.ink2,
-          }}>
-            已從 Idea Collection 帶入主題／背景資料，你可以喺生成前再微調。
-          </div>
-        )}
-        <div style={{
-          marginBottom: '20px',
-          padding: '12px 16px',
-          borderRadius: css.radius,
-          border: `1px solid ${styleStorageMode === 'supabase' ? css.border2 : css.border}`,
-          background: 'rgba(255,255,255,0.55)',
-          fontSize: '13px',
-          color: css.ink2,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span>
-              Style Memory 儲存位置：<strong>{styleStorageMode === 'supabase' ? 'Supabase' : 'Local'}</strong>
-            </span>
-            <button
-              onClick={syncLocalMemoryToSupabase}
-              disabled={styleSyncing}
-              style={{
-                cursor: styleSyncing ? 'not-allowed' : 'pointer',
-                fontSize: '12px',
-                fontFamily: "'DM Sans', sans-serif",
-                padding: '8px 14px',
-                borderRadius: '99px',
-                border: `1px solid ${css.border2}`,
-                color: css.ink,
-                background: 'transparent',
-                opacity: styleSyncing ? 0.5 : 1,
-              }}
-            >
-              {styleSyncing ? '同步中...' : '同步到 Supabase'}
-            </button>
-          </div>
-          {styleSyncMessage && <div style={{ marginTop: '8px', fontSize: '12px', color: css.ink3 }}>{styleSyncMessage}</div>}
-        </div>
-        <div style={{ height: '1px', background: css.border, marginBottom: '52px' }} />
-
-        {/* 01 品牌 */}
-        <div style={{ marginBottom: '48px' }}>
-          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>01</div>
-          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>品牌 / 個人名稱</div>
-          <input value={brand} onChange={e => setBrand(e.target.value)} placeholder="例：One Bite、丁丁、Hilary Travels" style={inputStyle} />
-        </div>
-
-        {/* 02 行業 */}
-        <div style={{ marginBottom: '48px' }}>
-          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>02</div>
-          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>行業 / 類型</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '10px' }}>
-            {INDUSTRIES.map(i => (
-              <button key={i} onClick={() => setIndustry(i)} style={{
-                cursor: 'pointer', fontSize: '14px', fontFamily: "'DM Sans', sans-serif",
-                padding: '9px 22px', borderRadius: '99px',
-                border: `1px solid ${industry === i ? css.ink : css.border2}`,
-                color: industry === i ? css.bg : css.ink2,
-                background: industry === i ? css.ink : 'transparent',
-              }}>{i}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* 03 主題 */}
-        <div style={{ marginBottom: '48px' }}>
-          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>03</div>
-          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>主題</div>
-          <input value={topic} onChange={e => setTopic(e.target.value)} placeholder="例：最強宵夜滷肉飯？全世界最靚聖誕市集？" style={inputStyle} />
-        </div>
-
-        {/* 04 背景資料 */}
-        <div style={{ marginBottom: '48px' }}>
-          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>04</div>
-          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>請提供完整背景資料</div>
-          <textarea value={background} onChange={e => setBackground(e.target.value)}
-            placeholder="例：係老字號，成立1920年，主打豬油糕同老婆餅..."
-            style={{ ...inputStyle, minHeight: '130px', resize: 'vertical' as const, lineHeight: 1.65 }} />
-        </div>
-
-        <div style={{ height: '1px', background: css.border, marginBottom: '52px' }} />
-
-        {/* 05 Hook */}
-        <div style={{ marginBottom: '48px' }}>
-          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>05</div>
-          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>Hook 風格</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '10px' }}>
-            {HOOKS.map(h => <StyleCard key={h.c} item={h} selected={selH === h.c} onSelect={() => setSelH(h.c)} />)}
-          </div>
-        </div>
-
-        {/* 06 轉場 */}
-        <div style={{ marginBottom: '48px' }}>
-          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>06</div>
-          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>轉場風格</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '10px' }}>
-            {TRANS.map(t => <StyleCard key={t.c} item={t} selected={selT === t.c} onSelect={() => setSelT(t.c)} />)}
-          </div>
-        </div>
-
-        {/* 07 Ending */}
-        <div style={{ marginBottom: '48px' }}>
-          <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>07</div>
-          <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '20px' }}>Ending 風格</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '10px' }}>
-            {ENDS.map(e => <StyleCard key={e.c} item={e} selected={selE === e.c} onSelect={() => setSelE(e.c)} />)}
-          </div>
-        </div>
-
-        {/* 生成按鈕 */}
-        <button onClick={generate} disabled={loading} style={{
-          width: '100%', padding: '18px', borderRadius: css.radius, border: 'none',
-          background: loading ? css.ink3 : css.ink, color: css.bg,
-          fontSize: '15px', fontFamily: "'DM Sans', sans-serif", fontWeight: 500,
-          cursor: loading ? 'not-allowed' : 'pointer', marginTop: '8px',
-        }}>
-          {loading ? '正在生成，約需 15 秒...' : '生成 Script'}
-        </button>
-
-        {error && (
-          <div style={{ marginTop: '14px', padding: '14px 18px', borderRadius: css.radius, background: 'rgba(180,60,60,.08)', border: '1px solid rgba(180,60,60,.2)', color: '#8b3333', fontSize: '13px' }}>
-            {error}
-          </div>
-        )}
-
-        {/* 輸出結果 */}
-        {script && (
-          <div style={{ marginTop: '56px' }}>
-            <div style={{ fontSize: '11px', letterSpacing: '.1em', textTransform: 'uppercase' as const, color: css.ink3, marginBottom: '16px' }}>
-              {[brand, industry, topic].filter(Boolean).join('  ·  ')}
+      <div className="workspace-shell">
+        <aside className="workspace-sidebar">
+          <div style={{ ...railCard, padding: '18px 16px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: '18px', border: `1px solid ${css.border2}`, background: 'rgba(255,255,255,0.05)' }}>
+              <span style={{ width: '16px', height: '16px', borderRadius: '999px', background: '#7b61ff', display: 'inline-block' }} />
+              <span style={{ fontSize: '14px', fontWeight: 600 }}>Script Generator</span>
             </div>
-            <div style={{ display: 'grid', gap: '16px' }}>
-              <div style={{ background: 'rgba(255,255,255,0.65)', border: `1px solid ${css.border}`, borderRadius: css.radius, padding: '24px 28px' }}>
-                <div style={{ fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase' as const, color: css.ink3, marginBottom: '14px' }}>AI 初稿</div>
+            <div style={{ marginTop: '18px', color: css.ink3, fontSize: '13px', lineHeight: 1.7 }}>
+              SOON 內部劇本系統
+            </div>
+          </div>
+
+          <div style={{ ...railCard }}>
+            <div style={{ fontSize: '12px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '14px' }}>今日工作</div>
+            <div style={{ display: 'grid', gap: '10px' }}>
+              {[
+                `已填設定 ${setupProgress}/7`,
+                importedFromIdea ? '已接收題材資料' : '可手動建立新劇本',
+                script ? '已有生成結果' : '等待生成初稿',
+                qcScript ? 'QC 區可直接修稿' : '生成後可開始 QC',
+              ].map((item, index) => (
+                <div key={item} style={{ padding: '12px 14px', borderRadius: '14px', background: index === 0 ? 'rgba(111,107,255,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${index === 0 ? css.border2 : css.border}`, fontSize: '13px', color: css.ink2 }}>
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ ...railCard }}>
+            <div style={{ fontSize: '12px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '14px' }}>寫作骨架</div>
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {[
+                ['Hook', selectedHook?.n, selectedHook?.d],
+                ['轉場', selectedTrans?.n, selectedTrans?.d],
+                ['Ending', selectedEnd?.n, selectedEnd?.d],
+              ].map(([label, title, desc]) => (
+                <div key={label} style={{ padding: '14px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${css.border}` }}>
+                  <div style={{ fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '6px' }}>{label}</div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>{title}</div>
+                  <div style={{ fontSize: '12px', color: css.ink3, lineHeight: 1.6 }}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        <main className="workspace-main">
+          <section style={{ ...railCard, padding: '28px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontSize: '12px', letterSpacing: '.16em', textTransform: 'uppercase', color: css.ink3, marginBottom: '12px' }}>SOON 創作工作台</div>
+                <h1 style={{ fontSize: '50px', lineHeight: 1, margin: 0, fontWeight: 500 }}>IG Reel 劇本工作台</h1>
+                <div style={{ marginTop: '16px', fontSize: '16px', color: css.ink2, maxWidth: '760px', lineHeight: 1.7 }}>
+                  將題材、背景資料、Hook、轉場與結尾結構放進同一個內部 board，快速生成可直接進入 QC 的短片劇本。
+                </div>
+              </div>
+              <div style={{ display: 'grid', gap: '10px', minWidth: '240px' }}>
+                <button onClick={generate} disabled={loading} style={{ cursor: loading ? 'not-allowed' : 'pointer', padding: '14px 18px', borderRadius: '16px', border: '1px solid rgba(130,126,255,0.48)', background: 'linear-gradient(135deg,#7b61ff,#5e8bff)', color: '#fff', fontSize: '14px', fontWeight: 700, boxShadow: '0 18px 36px rgba(93, 104, 255, 0.28)' }}>
+                  {loading ? '正在生成初稿…' : '生成劇本初稿'}
+                </button>
+                <div style={{ padding: '12px 14px', borderRadius: '16px', background: importedFromIdea ? 'rgba(111,107,255,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${importedFromIdea ? css.border2 : css.border}`, fontSize: '13px', color: css.ink2 }}>
+                  {importedFromIdea ? '已從題材工作台帶入主題與背景，可直接微調後生成。' : '可直接手動輸入內容需求，建立新一輪劇本。'}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="workspace-grid">
+            <div style={{ ...railCard, padding: '26px' }}>
+              <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '18px' }}>內容設定</div>
+              <div style={{ display: 'grid', gap: '26px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>01</div>
+                  <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>品牌 / 個人名稱</div>
+                  <input value={brand} onChange={e => setBrand(e.target.value)} placeholder="例：One Bite、丁丁、Hilary Travels" style={inputStyle} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>02</div>
+                  <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>行業 / 類型</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    {INDUSTRIES.map(i => (
+                      <button key={i} onClick={() => setIndustry(i)} style={{ cursor: 'pointer', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", padding: '9px 18px', borderRadius: '999px', border: `1px solid ${industry === i ? 'rgba(130,126,255,0.48)' : css.border}`, color: industry === i ? '#fff' : css.ink2, background: industry === i ? 'linear-gradient(135deg,#7b61ff,#5e8bff)' : 'rgba(255,255,255,0.04)' }}>
+                        {i}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>03</div>
+                  <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>主題</div>
+                  <input value={topic} onChange={e => setTopic(e.target.value)} placeholder="例：最強宵夜滷肉飯？全世界最靚聖誕市集？" style={inputStyle} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>04</div>
+                  <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>完整背景資料</div>
+                  <textarea value={background} onChange={e => setBackground(e.target.value)} placeholder="例：係老字號，成立 1920 年，主打豬油糕同老婆餅…" style={{ ...inputStyle, minHeight: '180px', resize: 'vertical' as const, lineHeight: 1.7 }} />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ ...railCard, padding: '26px' }}>
+              <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '18px' }}>語氣骨架</div>
+              <div style={{ display: 'grid', gap: '26px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>05</div>
+                  <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>Hook 風格</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '10px' }}>
+                    {HOOKS.map(h => <StyleCard key={h.c} item={h} selected={selH === h.c} onSelect={() => setSelH(h.c)} />)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>06</div>
+                  <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>轉場風格</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '10px' }}>
+                    {TRANS.map(t => <StyleCard key={t.c} item={t} selected={selT === t.c} onSelect={() => setSelT(t.c)} />)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>07</div>
+                  <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>Ending 風格</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '10px' }}>
+                    {ENDS.map(e => <StyleCard key={e.c} item={e} selected={selE === e.c} onSelect={() => setSelE(e.c)} />)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {error && (
+            <div style={{ ...railCard, border: '1px solid rgba(255,120,120,0.22)', background: 'rgba(88,26,34,0.55)', color: '#ffc0c0' }}>
+              {error}
+            </div>
+          )}
+
+          {script && (
+            <section style={{ display: 'grid', gap: '18px' }}>
+              <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3 }}>
+                {[brand, industry, topic].filter(Boolean).join('  ·  ')}
+              </div>
+
+              <div style={{ ...railCard, padding: '24px 26px' }}>
+                <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '16px' }}>AI 初稿</div>
                 <div style={{ display: 'grid', gap: '14px' }}>
                   {splitScriptSections(script).map(section => (
                     <div key={section.title} style={{ borderBottom: `1px solid ${css.border}`, paddingBottom: '14px' }}>
-                      <div style={{ fontSize: '16px', fontWeight: 500, color: css.ink, marginBottom: '8px' }}>{section.title}</div>
-                      <div style={{ fontSize: '14px', lineHeight: 1.9, color: css.ink, whiteSpace: 'pre-wrap' as const }}>{section.content}</div>
+                      <div style={{ fontSize: '16px', fontWeight: 600, color: css.ink, marginBottom: '8px' }}>{section.title}</div>
+                      <div style={{ fontSize: '14px', lineHeight: 1.9, color: css.ink2, whiteSpace: 'pre-wrap' as const }}>{section.content}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.78)', border: `1px solid ${css.border2}`, borderRadius: css.radius, padding: '24px 28px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' as const }}>
+              <div style={{ ...railCard, padding: '24px 26px', border: `1px solid ${css.border2}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
                   <div>
-                    <div style={{ fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase' as const, color: css.ink3, marginBottom: '6px' }}>QC 最終稿</div>
-                    <div style={{ fontSize: '13px', color: css.ink2 }}>你改完呢版之後，上傳去 Drive 會以呢份為準。</div>
+                    <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '6px' }}>QC 最終稿</div>
+                    <div style={{ fontSize: '13px', color: css.ink2 }}>修完呢版之後，上傳到 Drive 會以呢份為準。</div>
                   </div>
-                  <div style={{ fontSize: '11px', color: styleSaved ? '#4a8a5c' : css.ink3 }}>
+                  <div style={{ fontSize: '12px', color: styleSaved ? '#8df0b4' : css.ink3 }}>
                     {styleSaved ? '✓ 已加入 Style Memory' : `${styleMemory.length} 條 Style Memory`} · {styleStorageMode === 'supabase' ? 'Supabase' : 'Local'}
                   </div>
                 </div>
-                <textarea
-                  value={qcScript}
-                  onChange={e => setQcScript(e.target.value)}
-                  style={{ ...inputStyle, minHeight: '320px', resize: 'vertical' as const, lineHeight: 1.8, background: 'rgba(255,255,255,0.9)' }}
-                />
+                <textarea value={qcScript} onChange={e => setQcScript(e.target.value)} style={{ ...inputStyle, minHeight: '340px', resize: 'vertical' as const, lineHeight: 1.8, background: 'rgba(255,255,255,0.06)' }} />
               </div>
-            </div>
 
-            {(editSummary || styleRulesPreview.length > 0) && (
-              <div style={{ marginTop: '18px', background: 'rgba(255,255,255,0.55)', border: `1px solid ${css.border}`, borderRadius: css.radius, padding: '22px 24px' }}>
-                <div style={{ fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase' as const, color: css.ink3, marginBottom: '10px' }}>Style Memory</div>
-                {editSummary && (
-                  <div style={{ fontSize: '14px', lineHeight: 1.8, color: css.ink2, marginBottom: '12px' }}>{editSummary}</div>
-                )}
-                {styleRulesPreview.length > 0 && (
-                  <ul style={{ paddingLeft: '18px', color: css.ink, lineHeight: 1.8, fontSize: '14px' }}>
-                    {styleRulesPreview.map(rule => <li key={rule}>{rule}</li>)}
-                  </ul>
-                )}
+              {(editSummary || styleRulesPreview.length > 0) && (
+                <div style={{ ...railCard }}>
+                  <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '10px' }}>Style Memory</div>
+                  {editSummary && <div style={{ fontSize: '14px', lineHeight: 1.8, color: css.ink2, marginBottom: '12px' }}>{editSummary}</div>}
+                  {styleRulesPreview.length > 0 && (
+                    <ul style={{ paddingLeft: '18px', color: css.ink, lineHeight: 1.8, fontSize: '14px', margin: 0 }}>
+                      {styleRulesPreview.map(rule => <li key={rule}>{rule}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <button onClick={copyScript} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: '1px solid rgba(130,126,255,0.48)', background: 'linear-gradient(135deg,#7b61ff,#5e8bff)', color: '#fff', cursor: 'pointer' }}>
+                  {copied ? '已複製！' : '複製 Script'}
+                </button>
+                <button onClick={copyQcScript} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: 'rgba(255,255,255,0.05)', color: css.ink2, cursor: 'pointer' }}>
+                  {copiedQc ? '已複製 QC 稿！' : '複製 QC 稿'}
+                </button>
+                <button onClick={analyzeEdits} disabled={analyzingEdits || !qcScript.trim()} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: 'rgba(255,255,255,0.05)', color: css.ink2, cursor: analyzingEdits ? 'not-allowed' : 'pointer', opacity: analyzingEdits ? 0.6 : 1 }}>
+                  {analyzingEdits ? '分析改稿中…' : '分析我改咗咩'}
+                </button>
+                <button onClick={uploadToDrive} disabled={uploading} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: '1px solid rgba(90,204,150,0.26)', background: uploadDone ? '#4a8a5c' : 'rgba(74,138,92,0.16)', color: uploadDone ? '#fff' : '#baf0cc', cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.6 : 1 }}>
+                  {uploading ? '上傳中…' : uploadDone ? '✓ 已上傳 QC 稿到 Drive' : '上傳 QC 稿去 Drive'}
+                </button>
+                <button onClick={generate} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: 'rgba(255,255,255,0.05)', color: css.ink2, cursor: 'pointer' }}>
+                  重新生成
+                </button>
               </div>
-            )}
 
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' as const }}>
-              <button onClick={copyScript} style={{
-                fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
-                borderRadius: '99px', border: `1px solid ${css.ink}`, background: css.ink, color: css.bg, cursor: 'pointer',
-              }}>{copied ? '已複製！' : '複製 Script'}</button>
-              <button onClick={copyQcScript} style={{
-                fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
-                borderRadius: '99px', border: `1px solid ${css.border2}`, background: 'transparent', color: css.ink2, cursor: 'pointer',
-              }}>{copiedQc ? '已複製 QC 稿！' : '複製 QC 稿'}</button>
-              <button onClick={analyzeEdits} disabled={analyzingEdits || !qcScript.trim()} style={{
-                fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
-                borderRadius: '99px', border: `1px solid ${css.border2}`, background: css.inputBg, color: css.ink, cursor: analyzingEdits ? 'not-allowed' : 'pointer',
-              }}>{analyzingEdits ? '分析改稿中...' : '分析我改咗咩'}</button>
-              <button onClick={uploadToDrive} disabled={uploading} style={{
-                fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
-                borderRadius: '99px', border: `1px solid ${uploading ? css.border2 : '#4a8a5c'}`,
-                background: uploading ? 'transparent' : uploadDone ? '#4a8a5c' : '#4a8a5c',
-                color: uploading ? css.ink3 : '#fff', cursor: uploading ? 'not-allowed' : 'pointer',
-              }}>{uploading ? '上傳中...' : uploadDone ? '✓ 已上傳 QC 稿到 Drive' : '📁 上傳 QC 稿去 Drive'}</button>
-              <button onClick={generate} style={{
-                fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '10px 22px',
-                borderRadius: '99px', border: `1px solid ${css.border2}`, background: 'transparent', color: css.ink2, cursor: 'pointer',
-              }}>重新生成</button>
+              {driveUrl && (
+                <a href={driveUrl} target="_blank" rel="noopener" style={{ display: 'inline-block', fontSize: '13px', color: '#89e0ad', textDecoration: 'none' }}>
+                  → 喺 Google Drive 開啟
+                </a>
+              )}
+            </section>
+          )}
+        </main>
+
+        <aside className="workspace-rail">
+          <div style={railCard}>
+            <div style={{ fontSize: '12px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '14px' }}>系統狀態</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {[
+                ['記憶條數', `${styleMemory.length}`],
+                ['儲存模式', styleStorageMode === 'supabase' ? 'Supabase' : 'Local'],
+                ['初稿狀態', script ? '已生成' : '未生成'],
+                ['Drive', driveUrl ? '已連結' : '未上傳'],
+              ].map(([label, value]) => (
+                <div key={label} style={{ padding: '14px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${css.border}` }}>
+                  <div style={{ fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '6px' }}>{label}</div>
+                  <div style={{ fontSize: '20px', fontWeight: 600 }}>{value}</div>
+                </div>
+              ))}
             </div>
-            {driveUrl && (
-              <a href={driveUrl} target="_blank" rel="noopener" style={{
-                display: 'inline-block', marginTop: '12px', fontSize: '12px', color: '#4a8a5c', textDecoration: 'none',
-              }}>→ 喺 Google Drive 開啟</a>
-            )}
           </div>
-        )}
+
+          <div style={railCard}>
+            <div style={{ fontSize: '12px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '10px' }}>Style Memory</div>
+            <div style={{ fontSize: '14px', lineHeight: 1.8, color: css.ink2, marginBottom: '14px' }}>
+              當前儲存位置：<strong style={{ color: css.ink }}>{styleStorageMode === 'supabase' ? 'Supabase' : 'Local'}</strong>
+            </div>
+            <button onClick={syncLocalMemoryToSupabase} disabled={styleSyncing} style={{ width: '100%', cursor: styleSyncing ? 'not-allowed' : 'pointer', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '12px 14px', borderRadius: '14px', border: `1px solid ${css.border2}`, color: css.ink, background: 'rgba(111,107,255,0.14)', opacity: styleSyncing ? 0.5 : 1 }}>
+              {styleSyncing ? '同步中…' : '同步到 Supabase'}
+            </button>
+            {styleSyncMessage && <div style={{ marginTop: '10px', fontSize: '12px', color: css.ink3, lineHeight: 1.7 }}>{styleSyncMessage}</div>}
+          </div>
+
+          <div style={railCard}>
+            <div style={{ fontSize: '12px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '12px' }}>接力流程</div>
+            <div style={{ display: 'grid', gap: '10px' }}>
+              {[
+                ['題材工作台', '整理主題與背景'],
+                ['劇本工作台', '生成初稿與 QC'],
+                ['分鏡工作台', '將 QC 稿推進分鏡'],
+              ].map(([title, desc], index) => (
+                <div key={title} style={{ padding: '14px', borderRadius: '16px', background: index === 1 ? 'rgba(111,107,255,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${index === 1 ? css.border2 : css.border}` }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>{title}</div>
+                  <div style={{ fontSize: '12px', color: css.ink3, lineHeight: 1.6 }}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
       </div>
+
+      <style jsx>{`
+        .workspace-shell {
+          max-width: 1680px;
+          margin: 0 auto;
+          padding: 28px 20px 72px;
+          display: grid;
+          grid-template-columns: 260px minmax(0, 1fr) 300px;
+          gap: 20px;
+        }
+        .workspace-sidebar,
+        .workspace-rail {
+          position: sticky;
+          top: 84px;
+          align-self: start;
+          display: grid;
+          gap: 18px;
+        }
+        .workspace-main {
+          display: grid;
+          gap: 20px;
+          min-width: 0;
+        }
+        .workspace-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+          gap: 20px;
+        }
+        @media (max-width: 1280px) {
+          .workspace-shell {
+            grid-template-columns: 240px minmax(0, 1fr);
+          }
+          .workspace-rail {
+            grid-column: 1 / -1;
+            position: static;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+        }
+        @media (max-width: 1024px) {
+          .workspace-shell {
+            grid-template-columns: 1fr;
+          }
+          .workspace-sidebar,
+          .workspace-rail {
+            position: static;
+          }
+          .workspace-grid,
+          .workspace-rail {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   )
 }
