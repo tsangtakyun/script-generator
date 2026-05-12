@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from 'next/headers'
+import { EmbeddedMode } from '@/components/EmbeddedMode'
 
 export const metadata: Metadata = {
   title: "SOON 內部系統 · 劇本生成",
@@ -28,7 +29,7 @@ function NavBar({ creatorMode }: { creatorMode: boolean }) {
   }
 
   return (
-    <nav style={{
+    <nav className="soon-hide-embedded" style={{
       position: 'fixed',
       top: 0, left: 0, right: 0,
       zIndex: 1000,
@@ -75,6 +76,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="stylesheet" href="/soon-design-system.css" />
       </head>
       <body style={{ margin: 0, padding: 0, paddingTop: '64px', background: 'var(--soon-bg)' }}>
+        <EmbeddedMode />
         <NavBar creatorMode={creatorMode} />
         {children}
       </body>
