@@ -9,12 +9,12 @@ export const metadata: Metadata = {
 function NavBar({ creatorMode }: { creatorMode: boolean }) {
   const pillStyle = {
     fontSize: '12px',
-    color: '#cdd2f3',
+    color: 'var(--soon-text-secondary)',
     textDecoration: 'none',
     padding: '8px 14px',
-    borderRadius: '999px',
-    border: '1px solid rgba(255,255,255,0.08)',
-    background: 'rgba(255,255,255,0.04)',
+    borderRadius: 'var(--soon-radius)',
+    border: '0.5px solid var(--soon-border)',
+    background: 'transparent',
     letterSpacing: '0.03em',
     fontFamily: 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     whiteSpace: 'nowrap' as const,
@@ -22,10 +22,9 @@ function NavBar({ creatorMode }: { creatorMode: boolean }) {
 
   const activePillStyle = {
     ...pillStyle,
-    color: '#f7f8ff',
-    border: '1px solid rgba(130,126,255,0.45)',
-    background: 'linear-gradient(135deg, rgba(111,107,255,0.28), rgba(111,107,255,0.12))',
-    boxShadow: '0 12px 28px rgba(111,107,255,0.18)',
+    color: '#fff',
+    border: '0.5px solid rgba(124,58,237,0.3)',
+    background: 'var(--soon-purple)',
   }
 
   return (
@@ -33,9 +32,8 @@ function NavBar({ creatorMode }: { creatorMode: boolean }) {
       position: 'fixed',
       top: 0, left: 0, right: 0,
       zIndex: 1000,
-      background: 'rgba(28, 31, 54, 0.94)',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
-      backdropFilter: 'blur(18px)',
+      background: '#0f0f0f',
+      borderBottom: '0.5px solid var(--soon-border)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -44,11 +42,11 @@ function NavBar({ creatorMode }: { creatorMode: boolean }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-          <span style={{ width: '11px', height: '11px', borderRadius: '999px', background: '#ff7b4d', display: 'inline-block' }} />
-          <span style={{ width: '11px', height: '11px', borderRadius: '999px', background: '#7b61ff', display: 'inline-block' }} />
-          <span style={{ width: '11px', height: '11px', borderRadius: '999px', background: '#5e8bff', display: 'inline-block' }} />
+          <span style={{ width: '11px', height: '11px', borderRadius: '999px', background: 'var(--soon-purple)', display: 'inline-block' }} />
+          <span style={{ width: '11px', height: '11px', borderRadius: '999px', background: 'var(--soon-purple-light)', display: 'inline-block' }} />
+          <span style={{ width: '11px', height: '11px', borderRadius: '999px', background: 'var(--soon-success)', display: 'inline-block' }} />
         </div>
-        <div style={{ color: '#f7f8ff', fontSize: '15px', fontWeight: 700, fontFamily: 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', whiteSpace: 'nowrap' }}>
+        <div style={{ color: 'var(--soon-text)', fontSize: '15px', fontWeight: 700, fontFamily: 'system-ui, sans-serif', whiteSpace: 'nowrap' }}>
           SOON Internal
         </div>
       </div>
@@ -73,7 +71,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="zh-HK">
-      <body style={{ margin: 0, padding: 0, paddingTop: '64px', background: '#171a2f' }}>
+      <head>
+        <link rel="stylesheet" href="/soon-design-system.css" />
+      </head>
+      <body style={{ margin: 0, padding: 0, paddingTop: '64px', background: 'var(--soon-bg)' }}>
         <NavBar creatorMode={creatorMode} />
         {children}
       </body>
