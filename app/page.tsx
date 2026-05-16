@@ -11,12 +11,12 @@ const INDUSTRIES = [
 
 const HOOKS = [
   { id: 'H1', c: 'H1', label: '極端行動質問', desc: '誇張行為/處境問觀眾', example: '「你試過喺香港搵到一碗低過$30嘅靚湯未？」' },
-  { id: 'H2', c: 'H2', label: '真定假 — 直接挑戰', desc: '質疑廣泛聲稱，邀請驗證', example: '「成日話呢間係全港最好食，我今日嚟拆穿佢。」' },
+  { id: 'H2', c: 'H2', label: '真定假 — 直接挑戰', desc: '質疑廣泛聲稱，邀請驗證', example: '「成日話呢間係全港最好食，真定假呀？」' },
   { id: 'H3', c: 'H3', label: '聽講 — 半信半疑', desc: '借第三者放法引入懸念', example: '「我朋友話呢度嘅咖啡係全城最好，我唔信。」' },
-  { id: 'H4', c: 'H4', label: '感官喚起 + 懸念', desc: '啟動感官記憶再加轉折', example: '「想像一下，第一口係焦糖，第二口係驚喜。」' },
+  { id: 'H4', c: 'H4', label: '感官喚起 + 懸念', desc: '啟動感官記憶再加轉折', example: '「想像一下，第一口係焦糖，第二口係驚喜⋯⋯ 好想試呀」' },
   { id: 'H5', c: 'H5', label: '反差驚喜 — 竟然', desc: '意想不到對比，情緒跳躍', example: '「呢間藏係工廠大廈嘅餐廳，竟然係米芝蓮推介。」' },
   { id: 'H6', c: 'H6', label: '意外自我披露', desc: '個人誠洞拉近距離', example: '「我試過為咗呢碗麵坐一個鐘車，值唔值？」' },
-  { id: 'H7', c: 'H7', label: '荒誕事實', desc: '真實但荒謬嘅事，引發驚訝', example: '「香港有間咖啡店，閒日要排隊三個鐘。」' },
+  { id: 'H7', c: 'H7', label: '荒誕事實', desc: '真實但荒謬嘅事，引發驚訝', example: '「咩話？！香港有間咖啡店，閒日要排隊三個鐘。」' },
   { id: 'H8', c: 'H8', label: '代入感假設', desc: '「如果」句式引觀眾想像', example: '「如果你只有$100，你會點喺香港食到最好？」' },
 ]
 
@@ -247,12 +247,16 @@ export default function ScriptGenerator() {
   const [brandFromSettings, setBrandFromSettings] = useState(false)
 
   const loadBrandFromSettings = async (userId: string, metadata: any = {}) => {
+    console.log('[Brand Debug] userId:', userId)
     try {
       const { data, error } = await supabase
         .from('settings')
         .select('company_name, display_name')
         .eq('user_id', userId)
-        .maybeSingle()
+        .single()
+
+      console.log('[Brand Debug] data:', data)
+      console.log('[Brand Debug] error:', error)
 
       const brandName = (!error && data ? data.company_name || data.display_name : '')
         || metadata?.company_name
@@ -260,12 +264,15 @@ export default function ScriptGenerator() {
         || metadata?.full_name
         || ''
 
+      console.log('[Brand Debug] brandName:', brandName)
       if (brandName && !brand) {
         setBrand(brandName)
         setBrandFromSettings(true)
       }
-    } catch {
+    } catch (e) {
+      console.log('[Brand Debug] catch:', e)
       const brandName = metadata?.company_name || metadata?.display_name || metadata?.full_name || ''
+      console.log('[Brand Debug] fallback brandName:', brandName)
       if (brandName && !brand) {
         setBrand(brandName)
         setBrandFromSettings(true)
@@ -698,12 +705,15 @@ ${qcScript}
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
       <div className="workspace-shell">
         <main className="workspace-main">
+          {/* 建議圖片尺寸：1920×280px */}
           <img
             src="/script-banner.jpg"
             alt="IG Reel 劇本工作台"
             style={{
               width: '100%',
-              height: 'auto',
+              height: '200px',
+              objectFit: 'cover',
+              objectPosition: 'center 40%',
               borderRadius: '12px',
               display: 'block',
               marginBottom: '22px',
