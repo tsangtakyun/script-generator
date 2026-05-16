@@ -469,13 +469,13 @@ ${qcScript}
   const StyleCard = ({ item, selected, onSelect }: { item: any, selected: boolean, onSelect: () => void }) => (
     <div onClick={onSelect} style={{
       cursor: 'pointer', padding: '15px 17px', borderRadius: css.radius,
-      border: `1px solid ${selected ? css.ink : css.border}`,
-      backgroundColor: selected ? css.inputFocus : css.inputBg,
+      border: `1px solid ${selected ? 'var(--accent)' : 'var(--border-default)'}`,
+      backgroundColor: selected ? 'var(--accent)' : 'transparent',
       transition: 'all .18s',
     }}>
-      <div style={{ fontSize: '10px', letterSpacing: '.1em', textTransform: 'uppercase' as const, color: css.ink3, marginBottom: '5px', fontWeight: 500 }}>{item.c}</div>
-      <div style={{ fontSize: '13px', fontWeight: 500, color: css.ink, marginBottom: '3px' }}>{item.n}</div>
-      <div style={{ fontSize: '11px', color: css.ink3, lineHeight: 1.45 }}>{item.d}</div>
+      <div style={{ fontSize: '10px', letterSpacing: '.1em', textTransform: 'uppercase' as const, color: selected ? 'rgba(255,255,255,0.72)' : 'var(--text-muted)', marginBottom: '5px', fontWeight: 500 }}>{item.c}</div>
+      <div style={{ fontSize: '13px', fontWeight: 500, color: selected ? '#fff' : css.ink, marginBottom: '3px' }}>{item.n}</div>
+      <div style={{ fontSize: '11px', color: selected ? 'rgba(255,255,255,0.82)' : css.ink3, lineHeight: 1.45 }}>{item.d}</div>
     </div>
   )
 
@@ -498,68 +498,45 @@ ${qcScript}
   } as const
 
   return (
-    <div style={{ backgroundColor: css.bg, color: css.ink, fontFamily: "'DM Sans', sans-serif", minHeight: '100vh' }}>
+    <div style={{
+      backgroundColor: css.bg,
+      color: css.ink,
+      fontFamily: "'DM Sans', sans-serif",
+      minHeight: '100vh',
+      ['--accent' as any]: '#7c5cfc',
+      ['--border-subtle' as any]: '#2a2a3a',
+      ['--border-default' as any]: '#3a3a50',
+      ['--text-primary' as any]: '#f0f0f5',
+      ['--text-secondary' as any]: '#9090a8',
+      ['--text-muted' as any]: '#5a5a72',
+    }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
       <div className="workspace-shell">
-        <aside className="workspace-sidebar">
-          <div style={{ ...railCard, padding: '18px 16px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: '18px', border: `1px solid ${css.border2}`, background: 'rgba(255,255,255,0.05)' }}>
-              <span style={{ width: '16px', height: '16px', borderRadius: '999px', background: '#7b61ff', display: 'inline-block' }} />
-              <span style={{ fontSize: '14px', fontWeight: 600 }}>Script Generator</span>
-            </div>
-            <div style={{ marginTop: '18px', color: css.ink3, fontSize: '13px', lineHeight: 1.7 }}>
-              SOON 內部劇本系統
-            </div>
-          </div>
-
-          <div style={{ ...railCard }}>
-            <div style={{ fontSize: '12px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '14px' }}>今日工作</div>
-            <div style={{ display: 'grid', gap: '10px' }}>
-              {[
-                `已填設定 ${setupProgress}/7`,
-                importedFromIdea ? '已接收題材資料' : '可手動建立新劇本',
-                script ? '已有生成結果' : '等待生成初稿',
-                qcScript ? 'QC 區可直接修稿' : '生成後可開始 QC',
-              ].map((item, index) => (
-                <div key={item} style={{ padding: '12px 14px', borderRadius: '14px', background: index === 0 ? 'rgba(111,107,255,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${index === 0 ? css.border2 : css.border}`, fontSize: '13px', color: css.ink2 }}>
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ ...railCard }}>
-            <div style={{ fontSize: '12px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '14px' }}>寫作骨架</div>
-            <div style={{ display: 'grid', gap: '12px' }}>
-              {[
-                ['Hook', selectedHook?.n, selectedHook?.d],
-                ['轉場', selectedTrans?.n, selectedTrans?.d],
-                ['Ending', selectedEnd?.n, selectedEnd?.d],
-              ].map(([label, title, desc]) => (
-                <div key={label} style={{ padding: '14px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${css.border}` }}>
-                  <div style={{ fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '6px' }}>{label}</div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>{title}</div>
-                  <div style={{ fontSize: '12px', color: css.ink3, lineHeight: 1.6 }}>{desc}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
-
         <main className="workspace-main">
           <section style={{ ...railCard, padding: '28px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: '12px', letterSpacing: '.16em', textTransform: 'uppercase', color: css.ink3, marginBottom: '12px' }}>SOON 創作工作台</div>
                 <h1 style={{ fontSize: '50px', lineHeight: 1, margin: 0, fontWeight: 500 }}>IG Reel 劇本工作台</h1>
-                <div style={{ marginTop: '16px', fontSize: '16px', color: css.ink2, maxWidth: '760px', lineHeight: 1.7 }}>
-                  將題材、背景資料、Hook、轉場與結尾結構放進同一個內部 board，快速生成可直接進入 QC 的短片劇本。
+                <div style={{ marginTop: '16px', fontSize: '14px', color: 'var(--text-secondary)', maxWidth: '760px', lineHeight: 1.7 }}>
+                  填寫以下資料，AI 即時為你生成 IG Reel 劇本
                 </div>
               </div>
-              <div style={{ minWidth: '240px' }}>
-                <div style={{ padding: '12px 14px', borderRadius: '16px', background: importedFromIdea ? 'rgba(111,107,255,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${importedFromIdea ? css.border2 : css.border}`, fontSize: '13px', color: css.ink2 }}>
-                  {importedFromIdea ? '已從題材工作台帶入主題與背景，可直接微調後生成。' : '可直接手動輸入內容需求，建立新一輪劇本。'}
-                </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>1</div>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>題材工作台</span>
+              </div>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'white', fontWeight: 600 }}>2</div>
+                <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>劇本工作台</span>
+              </div>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>3</div>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>分鏡工作台</span>
               </div>
             </div>
           </section>
@@ -578,7 +555,7 @@ ${qcScript}
                   <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>行業 / 類型</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                     {INDUSTRIES.map(i => (
-                      <button key={i} onClick={() => setIndustry(i)} style={{ cursor: 'pointer', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", padding: '9px 18px', borderRadius: '999px', border: `1px solid ${industry === i ? 'rgba(130,126,255,0.48)' : css.border}`, color: industry === i ? '#fff' : css.ink2, background: industry === i ? 'linear-gradient(135deg,#7b61ff,#5e8bff)' : 'rgba(255,255,255,0.04)' }}>
+                      <button key={i} onClick={() => setIndustry(i)} style={{ cursor: 'pointer', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", padding: '9px 18px', borderRadius: '999px', border: `1px solid ${industry === i ? 'var(--accent)' : 'var(--border-default)'}`, color: industry === i ? '#fff' : 'var(--text-secondary)', background: industry === i ? 'var(--accent)' : 'transparent' }}>
                         {i}
                       </button>
                     ))}
@@ -709,100 +686,35 @@ ${qcScript}
           )}
         </main>
 
-        <aside className="workspace-rail">
-          <div style={railCard}>
-            <div style={{ fontSize: '12px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '14px' }}>系統狀態</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              {[
-                ['記憶條數', `${styleMemory.length}`],
-                ['儲存模式', styleStorageMode === 'supabase' ? 'Supabase' : 'Local'],
-                ['初稿狀態', script ? '已生成' : '未生成'],
-                ['Drive', driveUrl ? '已連結' : '未上傳'],
-              ].map(([label, value]) => (
-                <div key={label} style={{ padding: '14px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${css.border}` }}>
-                  <div style={{ fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '6px' }}>{label}</div>
-                  <div style={{ fontSize: '20px', fontWeight: 600 }}>{value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={railCard}>
-            <div style={{ fontSize: '12px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '10px' }}>Style Memory</div>
-            <div style={{ fontSize: '14px', lineHeight: 1.8, color: css.ink2, marginBottom: '14px' }}>
-              當前儲存位置：<strong style={{ color: css.ink }}>{styleStorageMode === 'supabase' ? 'Supabase' : 'Local'}</strong>
-            </div>
-            <button onClick={syncLocalMemoryToSupabase} disabled={styleSyncing} style={{ width: '100%', cursor: styleSyncing ? 'not-allowed' : 'pointer', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '12px 14px', borderRadius: '14px', border: `1px solid ${css.border2}`, color: css.ink, background: 'rgba(111,107,255,0.14)', opacity: styleSyncing ? 0.5 : 1 }}>
-              {styleSyncing ? '同步中…' : '同步到 Supabase'}
-            </button>
-            {styleSyncMessage && <div style={{ marginTop: '10px', fontSize: '12px', color: css.ink3, lineHeight: 1.7 }}>{styleSyncMessage}</div>}
-          </div>
-
-          <div style={railCard}>
-            <div style={{ fontSize: '12px', letterSpacing: '.12em', textTransform: 'uppercase', color: css.ink3, marginBottom: '12px' }}>接力流程</div>
-            <div style={{ display: 'grid', gap: '10px' }}>
-              {[
-                ['題材工作台', '整理主題與背景'],
-                ['劇本工作台', '生成初稿與 QC'],
-                ['分鏡工作台', '將 QC 稿推進分鏡'],
-              ].map(([title, desc], index) => (
-                <div key={title} style={{ padding: '14px', borderRadius: '16px', background: index === 1 ? 'rgba(111,107,255,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${index === 1 ? css.border2 : css.border}` }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>{title}</div>
-                  <div style={{ fontSize: '12px', color: css.ink3, lineHeight: 1.6 }}>{desc}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
       </div>
 
       <style jsx>{`
         .workspace-shell {
-          max-width: 1680px;
+          width: 100%;
+          max-width: none;
           margin: 0 auto;
           padding: 28px 20px 72px;
           display: grid;
-          grid-template-columns: 260px minmax(0, 1fr) 300px;
+          grid-template-columns: minmax(0, 1fr);
           gap: 20px;
-        }
-        .workspace-sidebar,
-        .workspace-rail {
-          position: sticky;
-          top: 84px;
-          align-self: start;
-          display: grid;
-          gap: 18px;
+          box-sizing: border-box;
         }
         .workspace-main {
           display: grid;
           gap: 20px;
           min-width: 0;
+          width: 100%;
         }
         .workspace-grid {
           display: grid;
           grid-template-columns: minmax(0, 1fr);
           gap: 20px;
         }
-        @media (max-width: 1280px) {
-          .workspace-shell {
-            grid-template-columns: 240px minmax(0, 1fr);
-          }
-          .workspace-rail {
-            grid-column: 1 / -1;
-            position: static;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-          }
-        }
         @media (max-width: 1024px) {
           .workspace-shell {
             grid-template-columns: 1fr;
           }
-          .workspace-sidebar,
-          .workspace-rail {
-            position: static;
-          }
-          .workspace-grid,
-          .workspace-rail {
+          .workspace-grid {
             grid-template-columns: 1fr;
           }
         }
