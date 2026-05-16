@@ -583,34 +583,30 @@ ${qcScript}
       <div className="workspace-shell">
         <main className="workspace-main">
           <section style={{ ...railCard, padding: '28px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: '12px', letterSpacing: '.16em', textTransform: 'uppercase', color: css.ink3, marginBottom: '12px' }}>SOON 創作工作台</div>
-                <h1 style={{ fontSize: '50px', lineHeight: 1, margin: 0, fontWeight: 500 }}>IG Reel 劇本工作台</h1>
-                <div style={{ marginTop: '16px', fontSize: '14px', color: 'var(--text-secondary)', maxWidth: '760px', lineHeight: 1.7 }}>
-                  填寫以下資料，AI 即時為你生成 IG Reel 劇本
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setHistoryOpen(true)
-                  loadHistory()
-                }}
+            <div style={{ position: 'relative', marginBottom: '20px' }}>
+              <img
+                src="/script-banner.jpg"
+                alt="IG Reel 劇本工作台"
                 style={{
-                  background: 'transparent',
-                  border: '1px solid var(--border-default)',
-                  color: 'var(--text-secondary)',
-                  borderRadius: '8px',
-                  padding: '8px 14px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  fontFamily: "'DM Sans', sans-serif",
+                  width: '100%',
+                  height: '180px',
+                  objectFit: 'cover',
+                  objectPosition: 'center',
+                  borderRadius: '12px',
+                  display: 'block',
                 }}
-              >
-                📋 歷史記錄
-              </button>
+              />
+              <div style={{
+                position: 'absolute',
+                bottom: '16px',
+                left: '20px',
+              }}>
+                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>SOON 創作工作台</p>
+                <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'white', margin: 0 }}>IG Reel 劇本工作台</h1>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>填寫以下資料，AI 即時為你生成 IG Reel 劇本</p>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>1</div>
                 <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>題材工作台</span>
@@ -645,7 +641,27 @@ ${qcScript}
 
           <section className="workspace-grid">
             <div style={{ ...railCard, padding: '26px' }}>
-              <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '18px' }}>劇本設定</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em' }}>劇本設定</span>
+                <button
+                  onClick={() => {
+                    setHistoryOpen(true)
+                    loadHistory()
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--border-default)',
+                    color: 'var(--text-secondary)',
+                    borderRadius: '8px',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  📋 歷史記錄
+                </button>
+              </div>
               <div style={{ display: 'grid', gap: '26px' }}>
                 <div>
                   <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>01</div>
