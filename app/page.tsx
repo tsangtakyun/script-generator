@@ -10,35 +10,35 @@ const INDUSTRIES = [
 ]
 
 const HOOKS = [
-  { c: 'H1', n: '極端行動質問', d: '誇張行為/處境問觀眾' },
-  { c: 'H2', n: '真定假 — 直接挑戰', d: '質疑廣泛聲稱，邀請驗證' },
-  { c: 'H3', n: '聽講 — 半信半疑', d: '借第三者說法引入懸念' },
-  { c: 'H4', n: '感官喚起 + 懸念', d: '啟動感官記憶再拋轉折' },
-  { c: 'H5', n: '反差驚喜 — 竟然', d: '意想不到對比，情緒跳躍' },
-  { c: 'H6', n: '意外自我披露', d: '個人資訊拉近距離' },
-  { c: 'H7', n: '荒誕事實', d: '真實但匪夷所思，引發驚訝' },
-  { c: 'H8', n: '代入感假設', d: '「如果」句式直問觀眾' },
+  { id: 'H1', c: 'H1', label: '極端行動質問', desc: '誇張行為/處境問觀眾', example: '「你試過喺香港搵到一碗低過$30嘅靚湯未？」' },
+  { id: 'H2', c: 'H2', label: '真定假 — 直接挑戰', desc: '質疑廣泛聲稱，邀請驗證', example: '「成日話呢間係全港最好食，我今日嚟拆穿佢。」' },
+  { id: 'H3', c: 'H3', label: '聽講 — 半信半疑', desc: '借第三者放法引入懸念', example: '「我朋友話呢度嘅咖啡係全城最好，我唔信。」' },
+  { id: 'H4', c: 'H4', label: '感官喚起 + 懸念', desc: '啟動感官記憶再加轉折', example: '「想像一下，第一口係焦糖，第二口係驚喜。」' },
+  { id: 'H5', c: 'H5', label: '反差驚喜 — 竟然', desc: '意想不到對比，情緒跳躍', example: '「呢間藏係工廠大廈嘅餐廳，竟然係米芝蓮推介。」' },
+  { id: 'H6', c: 'H6', label: '意外自我披露', desc: '個人誠洞拉近距離', example: '「我試過為咗呢碗麵坐一個鐘車，值唔值？」' },
+  { id: 'H7', c: 'H7', label: '荒誕事實', desc: '真實但荒謬嘅事，引發驚訝', example: '「香港有間咖啡店，閒日要排隊三個鐘。」' },
+  { id: 'H8', c: 'H8', label: '代入感假設', desc: '「如果」句式引觀眾想像', example: '「如果你只有$100，你會點喺香港食到最好？」' },
 ]
 
 const TRANS = [
-  { c: 'T1', n: '情緒代入 — 同行感', d: '主持緊張，拉觀眾入狀態' },
-  { c: 'T2', n: '轉念 — 入去先信咗', d: '懷疑被現實正面打臉' },
-  { c: 'T3', n: '質疑名氣 — 實力存疑', d: '對名氣打預防針' },
-  { c: 'T4', n: '實測宣言 — 等我試下', d: '宣佈「我幫你試」' },
-  { c: 'T5', n: '場景切割 — 另有真相', d: '意想不到角度重新定義' },
-  { c: 'T6', n: '第一印象反轉', d: '坦白第一眼唔吸引' },
-  { c: 'T7', n: '靈魂轉移 — 重點喺呢度', d: '真正精華喺另一樣' },
-  { c: 'T8', n: '頓悟時刻', d: '具體動作到情感領悟' },
+  { id: 'T1', c: 'T1', label: '情緒代入 — 同行感', desc: '主持緊張，拉觀眾入狀態', example: '「好，我依家入去喇，你哋跟住我。」' },
+  { id: 'T2', c: 'T2', label: '轉念 — 入去先信咗', desc: '懷疑被現實正面打臉', example: '「我本來唔信，但入到去就知我錯咗。」' },
+  { id: 'T3', c: 'T3', label: '質疑名氣 — 實力存疑', desc: '對名氣打預防針', example: '「有名就一定好食？我嚟幫你哋試。」' },
+  { id: 'T4', c: 'T4', label: '實測宣言 — 等我試下', desc: '宣佈「我幫你試」', example: '「唔講咁多，我親自試晒每一款。」' },
+  { id: 'T5', c: 'T5', label: '場景切割 — 另有真相', desc: '意想不到角度重新定義', example: '「但係等等，我發現咗一樣你哋唔知嘅事。」' },
+  { id: 'T6', c: 'T6', label: '第一印象反轉', desc: '坦白第一眼唔係咁吸引', example: '「老實講，第一眼我覺得好普通，但係⋯⋯」' },
+  { id: 'T7', c: 'T7', label: '靈魂轉移 — 重點喺呢度', desc: '真正精華喺另一樣', example: '「啲人嚟係為咗咖啡，但係我係為咗呢個。」' },
+  { id: 'T8', c: 'T8', label: '頓悟時刻', desc: '具體動作到情感領悟', example: '「食第一口嗰陣，我明白點解佢可以撐三十年。」' },
 ]
 
 const ENDS = [
-  { c: 'E1', n: '留白式 Verdict', d: '坦白收，短句，唔誇張' },
-  { c: 'E2', n: '值唔值得 — 親身作答', d: '回應開場，直接給答案' },
-  { c: 'E3', n: '情懷翻轉 — 真材實料', d: '老字號靠真實力' },
-  { c: 'E4', n: '自嘲收尾 — 解鎖', d: '輕鬆收，帶幽默' },
-  { c: 'E5', n: '詩意留白', d: '短句節奏，情緒拉遠' },
-  { c: 'E6', n: '個人感悟 — 超越食玩', d: '升華到人生意義' },
-  { c: 'E7', n: '哲學收結', d: '最有重量，適合文化類' },
+  { id: 'E1', c: 'E1', label: '留白式 Verdict', desc: '坦白收，短句，唔誇張', example: '「值唔值得去？你知我點諗。」' },
+  { id: 'E2', c: 'E2', label: '值唔值得 — 親身作答', desc: '回應開場，直接給答案', example: '「三個鐘車程值唔值？我下個月仲會返嚟。」' },
+  { id: 'E3', c: 'E3', label: '情懷翻轉 — 真材實料', desc: '老字號就算真實力', example: '「三十年，唔係靠宣傳，係靠呢碗湯。」' },
+  { id: 'E4', c: 'E4', label: '自嘲收尾 — 解鎖', desc: '輕鬆收，帶幽默', example: '「好，我又解鎖咗一個令荷包縮水嘅地方。」' },
+  { id: 'E5', c: 'E5', label: '詩意留白', desc: '短句節奏，情緒拉遠', example: '「有啲味道，係會記一世嘅。」' },
+  { id: 'E6', c: 'E6', label: '個人感悟 — 超越食玩', desc: '升華到人生意義', example: '「呢度令我記起，簡單嘅嘢有時最難得。」' },
+  { id: 'E7', c: 'E7', label: '哲學收結', desc: '帶哲學重量，適合文化題', example: '「一個地方能撐幾十年，從來唔係靠運氣。」' },
 ]
 
 type StyleMemoryEntry = {
@@ -629,15 +629,36 @@ ${qcScript}
   }
 
   const StyleCard = ({ item, selected, onSelect }: { item: any, selected: boolean, onSelect: () => void }) => (
-    <div onClick={onSelect} style={{
-      cursor: 'pointer', padding: '15px 17px', borderRadius: css.radius,
-      border: `1px solid ${selected ? 'var(--accent)' : 'var(--border-default)'}`,
-      backgroundColor: selected ? 'var(--accent)' : 'transparent',
-      transition: 'all .18s',
-    }}>
-      <div style={{ fontSize: '10px', letterSpacing: '.1em', textTransform: 'uppercase' as const, color: selected ? 'rgba(255,255,255,0.72)' : 'var(--text-muted)', marginBottom: '5px', fontWeight: 500 }}>{item.c}</div>
-      <div style={{ fontSize: '13px', fontWeight: 500, color: selected ? '#fff' : css.ink, marginBottom: '3px' }}>{item.n}</div>
-      <div style={{ fontSize: '11px', color: selected ? 'rgba(255,255,255,0.82)' : css.ink3, lineHeight: 1.45 }}>{item.d}</div>
+    <div
+      key={item.id}
+      onClick={onSelect}
+      style={{
+        background: selected ? 'var(--accent)' : 'var(--bg-card)',
+        border: `1px solid ${selected ? 'var(--accent)' : 'var(--border-subtle)'}`,
+        borderRadius: '10px',
+        padding: '14px 16px',
+        cursor: 'pointer',
+        minHeight: '110px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        transition: 'all .18s',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 600, opacity: 0.6 }}>{item.id}</span>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: selected ? 'white' : 'var(--text-primary)' }}>{item.label}</span>
+      </div>
+      <span style={{ fontSize: '11px', color: selected ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)' }}>{item.desc}</span>
+      <span style={{
+        fontSize: '12px',
+        color: selected ? 'rgba(255,255,255,0.9)' : 'var(--text-secondary)',
+        fontStyle: 'italic',
+        marginTop: '4px',
+        lineHeight: 1.5,
+        borderTop: `1px solid ${selected ? 'rgba(255,255,255,0.2)' : 'var(--border-subtle)'}`,
+        paddingTop: '6px',
+      }}>{item.example}</span>
     </div>
   )
 
@@ -747,22 +768,22 @@ ${qcScript}
                 <div>
                   <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>05</div>
                   <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>Hook 風格</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '10px' }}>
-                    {HOOKS.map(h => <StyleCard key={h.c} item={h} selected={selH === h.c} onSelect={() => setSelH(h.c)} />)}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+                    {HOOKS.map(h => <StyleCard key={h.id} item={h} selected={selH === h.id} onSelect={() => setSelH(h.id)} />)}
                   </div>
                 </div>
                 <div>
                   <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>06</div>
                   <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>轉場風格</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '10px' }}>
-                    {TRANS.map(t => <StyleCard key={t.c} item={t} selected={selT === t.c} onSelect={() => setSelT(t.c)} />)}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+                    {TRANS.map(t => <StyleCard key={t.id} item={t} selected={selT === t.id} onSelect={() => setSelT(t.id)} />)}
                   </div>
                 </div>
                 <div>
                   <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>07</div>
                   <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>Ending 風格</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '10px' }}>
-                    {ENDS.map(e => <StyleCard key={e.c} item={e} selected={selE === e.c} onSelect={() => setSelE(e.c)} />)}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+                    {ENDS.map(e => <StyleCard key={e.id} item={e} selected={selE === e.id} onSelect={() => setSelE(e.id)} />)}
                   </div>
                 </div>
                 <div style={{ display: 'grid', gap: '10px' }}>
