@@ -204,6 +204,9 @@ export default function ScriptGenerator() {
   const [uploadDone, setUploadDone] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
   const [importedFromIdea, setImportedFromIdea] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [historyList, setHistoryList] = useState<any[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   const persistLocalMemory = (entries: StyleMemoryEntry[]) => {
     window.localStorage.setItem(STYLE_MEMORY_KEY, JSON.stringify(entries))
@@ -413,6 +416,26 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     }
   }
 
+  const loadHistory = async () => {
+    setHistoryLoading(true)
+    try {
+      const { data: authData } = await supabase.auth.getUser()
+      const user = authData.user
+      if (!user?.id) {
+        setHistoryList([])
+        return
+      }
+
+      const res = await fetch(`/api/scripts?user_id=${user.id}`)
+      const data = await res.json()
+      setHistoryList(data.scripts || [])
+    } catch {
+      setHistoryList([])
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
   const analyzeEdits = async () => {
     if (!script.trim() || !qcScript.trim()) return
     setAnalyzingEdits(true)
@@ -568,6 +591,24 @@ ${qcScript}
                   填寫以下資料，AI 即時為你生成 IG Reel 劇本
                 </div>
               </div>
+              <button
+                onClick={() => {
+                  setHistoryOpen(true)
+                  loadHistory()
+                }}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-secondary)',
+                  borderRadius: '8px',
+                  padding: '8px 14px',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                📋 歷史記錄
+              </button>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -756,6 +797,103 @@ ${qcScript}
         </main>
 
       </div>
+
+      {historyOpen && (
+        <div
+          onClick={() => setHistoryOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            zIndex: 49,
+          }}
+        />
+      )}
+
+      {historyOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          width: '400px',
+          height: '100vh',
+          background: 'var(--bg-surface)',
+          borderLeft: '1px solid var(--border-subtle)',
+          zIndex: 50,
+          overflowY: 'auto',
+          padding: '24px',
+          boxSizing: 'border-box',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>歷史記錄</span>
+            <button onClick={() => setHistoryOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '20px' }}>×</button>
+          </div>
+
+          {historyLoading && (
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>載入中…</p>
+          )}
+
+          {!historyLoading && historyList.map((s) => (
+            <div
+              key={s.id}
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '10px',
+                padding: '14px',
+                marginBottom: '12px',
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                setBrand(s.brand || '')
+                setIndustry(s.industry || '')
+                setTopic(s.topic || '')
+                setBackground(s.background || '')
+                setSelH(s.hook_code || 'H1')
+                setSelT(s.trans_code || 'T1')
+                setSelE(s.ending_code || 'E1')
+                setScript(s.ai_draft || '')
+                setQcScript(s.qc_final || '')
+                setHistoryOpen(false)
+              }}
+            >
+              <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px' }}>
+                {s.topic || '（無題目）'}
+              </p>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 6px' }}>
+                {s.brand || '未命名'} · {s.industry || '未分類'}
+              </p>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
+                {s.updated_at ? new Date(s.updated_at).toLocaleDateString('zh-HK', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }) : ''}
+              </p>
+              <div style={{ marginTop: '8px', display: 'flex', gap: '6px' }}>
+                <span style={{
+                  fontSize: '11px',
+                  padding: '2px 8px',
+                  background: s.qc_final ? 'rgba(52,211,153,0.15)' : 'var(--bg-surface)',
+                  color: s.qc_final ? '#34d399' : 'var(--text-muted)',
+                  borderRadius: '999px',
+                  border: '1px solid var(--border-subtle)',
+                }}>
+                  {s.qc_final ? '✓ 有 QC 稿' : '草稿'}
+                </span>
+              </div>
+            </div>
+          ))}
+
+          {!historyLoading && historyList.length === 0 && (
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', marginTop: '40px' }}>
+              未有歷史記錄
+            </p>
+          )}
+        </div>
+      )}
 
       <style jsx>{`
         .workspace-shell {
