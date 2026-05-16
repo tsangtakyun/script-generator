@@ -473,6 +473,19 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
       const generated = data.content?.[0]?.text || ''
       setScript(generated)
       setQcScript(generated)
+      await saveScript(generated, generated)
+      window.parent.postMessage({
+        type: 'SOON_CREATE_DOC',
+        template_type: 'ig_script',
+        qc_final: generated,
+        ai_draft: generated,
+        topic: topic || '',
+        brand: brand || '',
+        industry: industry || '',
+        hook_code: selH || '',
+        trans_code: selT || '',
+        ending_code: selE || '',
+      }, '*')
     } catch (err: any) {
       setError('出現錯誤：' + err.message)
     }
@@ -491,7 +504,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     setTimeout(() => setCopiedQc(false), 2000)
   }
 
-  const saveScript = async (qcFinal: string) => {
+  const saveScript = async (qcFinal: string, aiDraftOverride?: string) => {
     try {
       const { data: authData } = await supabase.auth.getUser()
       const user = authData.user
@@ -509,7 +522,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
           hook_code: selH,
           trans_code: selT,
           ending_code: selE,
-          ai_draft: script,
+          ai_draft: aiDraftOverride ?? script,
           qc_final: qcFinal,
         }),
       })
@@ -519,19 +532,19 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
   }
 
   const loadHistory = async () => {
+    if (!session?.user?.id) {
+      console.log('[History Debug] 冇 session，唔讀歷史')
+      setHistoryList([])
+      return
+    }
     setHistoryLoading(true)
     try {
-      const { data: authData } = await supabase.auth.getUser()
-      const user = authData.user
-      if (!user?.id) {
-        setHistoryList([])
-        return
-      }
-
-      const res = await fetch(`/api/scripts?user_id=${user.id}`)
+      const res = await fetch(`/api/scripts?user_id=${session.user.id}`)
       const data = await res.json()
+      console.log('[History Debug] 回傳:', data)
       setHistoryList(data.scripts || [])
-    } catch {
+    } catch(e) {
+      console.log('[History Debug] 出錯:', e)
       setHistoryList([])
     } finally {
       setHistoryLoading(false)
@@ -633,24 +646,6 @@ ${qcScript}
       industry: industry || '',
     })
     window.open(`https://soon-storyboard.vercel.app?${params.toString()}`, '_blank')
-  }
-
-  const handleSaveToDoc = async () => {
-    if (!qcScript) return
-    await saveScript(qcScript)
-
-    window.parent.postMessage({
-      type: 'SOON_CREATE_DOC',
-      template_type: 'ig_script',
-      qc_final: qcScript,
-      ai_draft: script,
-      topic: topic || '',
-      brand: brand || '',
-      industry: industry || '',
-      hook_code: selH || '',
-      trans_code: selT || '',
-      ending_code: selE || '',
-    }, '*')
   }
 
   const StyleCard = ({ item, selected, onSelect }: { item: any, selected: boolean, onSelect: () => void }) => (
@@ -898,14 +893,9 @@ ${qcScript}
                   {uploading ? '上傳中…' : uploadDone ? '✓ 已上傳 QC 稿到 Drive' : '上傳 QC 稿去 Drive'}
                 </button>
                 {qcScript && (
-                  <>
-                    <button onClick={handlePushToStoryboard} style={{ background: '#7c5cfc', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                      🎬 推去分鏡工作台
-                    </button>
-                    <button onClick={handleSaveToDoc} style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                      📄 儲存去文件中心
-                    </button>
-                  </>
+                  <button onClick={handlePushToStoryboard} style={{ background: '#7c5cfc', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                    🎬 推去分鏡工作台
+                  </button>
                 )}
                 <button onClick={generate} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: css.surface, color: css.ink2, cursor: 'pointer' }}>
                   重新生成
