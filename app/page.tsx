@@ -582,53 +582,17 @@ ${qcScript}
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
       <div className="workspace-shell">
         <main className="workspace-main">
-          <section style={{ ...railCard, padding: '18px' }}>
-            <div style={{ marginBottom: '20px' }}>
-              <img
-                src="/script-banner.jpg"
-                alt="IG Reel 劇本工作台"
-                style={{
-                  width: '100%',
-                  height: '180px',
-                  objectFit: 'cover',
-                  objectPosition: 'center',
-                  borderRadius: '12px',
-                  display: 'block',
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>1</div>
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>題材工作台</span>
-              </div>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'white', fontWeight: 600 }}>2</div>
-                <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>劇本工作台</span>
-              </div>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
-              <div
-                onClick={qcScript ? handlePushToStoryboard : undefined}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: qcScript ? 'pointer' : 'default' }}
-              >
-                <div style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '50%',
-                  background: qcScript ? 'transparent' : 'var(--border-subtle)',
-                  border: qcScript ? '2px solid var(--accent)' : '2px solid transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  color: qcScript ? 'var(--accent)' : 'var(--text-muted)',
-                  boxSizing: 'border-box',
-                }}>3</div>
-                <span style={{ fontSize: '13px', color: qcScript ? 'var(--accent)' : 'var(--text-muted)' }}>分鏡工作台</span>
-              </div>
-            </div>
-          </section>
+          <img
+            src="/script-banner.jpg"
+            alt="IG Reel 劇本工作台"
+            style={{
+              width: '100%',
+              height: 'auto',
+              borderRadius: '12px',
+              display: 'block',
+              marginBottom: '22px',
+            }}
+          />
 
           <section className="workspace-grid">
             <div style={{ ...railCard, padding: '26px' }}>
