@@ -635,6 +635,24 @@ ${qcScript}
     window.open(`https://soon-storyboard.vercel.app?${params.toString()}`, '_blank')
   }
 
+  const handleSaveToDoc = async () => {
+    if (!qcScript) return
+    await saveScript(qcScript)
+
+    window.parent.postMessage({
+      type: 'SOON_CREATE_DOC',
+      template_type: 'ig_script',
+      qc_final: qcScript,
+      ai_draft: script,
+      topic: topic || '',
+      brand: brand || '',
+      industry: industry || '',
+      hook_code: selH || '',
+      trans_code: selT || '',
+      ending_code: selE || '',
+    }, '*')
+  }
+
   const StyleCard = ({ item, selected, onSelect }: { item: any, selected: boolean, onSelect: () => void }) => (
     <div
       key={item.id}
@@ -880,9 +898,14 @@ ${qcScript}
                   {uploading ? '上傳中…' : uploadDone ? '✓ 已上傳 QC 稿到 Drive' : '上傳 QC 稿去 Drive'}
                 </button>
                 {qcScript && (
-                  <button onClick={handlePushToStoryboard} style={{ background: '#7c5cfc', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                    🎬 推去分鏡工作台
-                  </button>
+                  <>
+                    <button onClick={handlePushToStoryboard} style={{ background: '#7c5cfc', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                      🎬 推去分鏡工作台
+                    </button>
+                    <button onClick={handleSaveToDoc} style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                      📄 儲存去文件中心
+                    </button>
+                  </>
                 )}
                 <button onClick={generate} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: css.surface, color: css.ink2, cursor: 'pointer' }}>
                   重新生成
