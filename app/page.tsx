@@ -582,8 +582,8 @@ ${qcScript}
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
       <div className="workspace-shell">
         <main className="workspace-main">
-          <section style={{ ...railCard, padding: '28px' }}>
-            <div style={{ position: 'relative', marginBottom: '20px' }}>
+          <section style={{ ...railCard, padding: '18px' }}>
+            <div style={{ marginBottom: '20px' }}>
               <img
                 src="/script-banner.jpg"
                 alt="IG Reel 劇本工作台"
@@ -596,15 +596,6 @@ ${qcScript}
                   display: 'block',
                 }}
               />
-              <div style={{
-                position: 'absolute',
-                bottom: '16px',
-                left: '20px',
-              }}>
-                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>SOON 創作工作台</p>
-                <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'white', margin: 0 }}>IG Reel 劇本工作台</h1>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>填寫以下資料，AI 即時為你生成 IG Reel 劇本</p>
-              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
