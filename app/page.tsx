@@ -207,6 +207,35 @@ export default function ScriptGenerator() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyList, setHistoryList] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [session, setSession] = useState<any>(null)
+  const [brandFromSettings, setBrandFromSettings] = useState(false)
+
+  const loadBrandFromSettings = async (userId: string, metadata: any = {}) => {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('company_name, display_name')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      const brandName = (!error && data ? data.company_name || data.display_name : '')
+        || metadata?.company_name
+        || metadata?.display_name
+        || metadata?.full_name
+        || ''
+
+      if (brandName && !brand) {
+        setBrand(brandName)
+        setBrandFromSettings(true)
+      }
+    } catch {
+      const brandName = metadata?.company_name || metadata?.display_name || metadata?.full_name || ''
+      if (brandName && !brand) {
+        setBrand(brandName)
+        setBrandFromSettings(true)
+      }
+    }
+  }
 
   const persistLocalMemory = (entries: StyleMemoryEntry[]) => {
     window.localStorage.setItem(STYLE_MEMORY_KEY, JSON.stringify(entries))
@@ -270,6 +299,30 @@ export default function ScriptGenerator() {
     if (backgroundParam) setBackground(backgroundParam)
     if (topicParam || backgroundParam) setImportedFromIdea(true)
   }, [])
+
+  useEffect(() => {
+    let mounted = true
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return
+      setSession(data.session)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+    })
+
+    return () => {
+      mounted = false
+      listener.subscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (session?.user?.id && !brand) {
+      loadBrandFromSettings(session.user.id, session.user.user_metadata)
+    }
+  }, [session?.user?.id])
 
   useEffect(() => {
     const bootstrapStyleMemory = async () => {
@@ -621,7 +674,12 @@ ${qcScript}
                 <div>
                   <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>01</div>
                   <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>品牌 / 個人名稱</div>
-                  <input value={brand} onChange={e => setBrand(e.target.value)} placeholder="例：One Bite、丁丁、Hilary Travels" style={inputStyle} />
+                  <input value={brand} onChange={e => { setBrand(e.target.value); setBrandFromSettings(false) }} placeholder="例：One Bite、丁丁、Hilary Travels" style={inputStyle} />
+                  {brand && brandFromSettings && (
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      已從帳戶設定自動填入，可手動修改
+                    </p>
+                  )}
                 </div>
                 <div>
                   <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>02</div>
