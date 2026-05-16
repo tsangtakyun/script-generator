@@ -163,14 +163,17 @@ function splitScriptSections(raw: string) {
 }
 
 const css = {
-  bg: '#171a2f',
-  ink: '#f5f7ff',
-  ink2: '#c9cdec',
-  ink3: '#8e94ba',
-  border: 'rgba(255,255,255,0.08)',
-  border2: 'rgba(128,118,255,0.28)',
-  inputBg: 'rgba(255,255,255,0.05)',
-  inputFocus: 'rgba(111,107,255,0.14)',
+  bg: '#0a0a0f',
+  surface: '#111118',
+  card: '#16161f',
+  ink: '#f0f0f5',
+  ink2: '#9090a8',
+  ink3: '#5a5a72',
+  border: '#2a2a3a',
+  border2: '#3a3a50',
+  inputBg: '#111118',
+  inputFocus: 'rgba(124,92,252,0.15)',
+  accent: '#7c5cfc',
   radius: '18px',
 }
 
@@ -490,11 +493,11 @@ ${qcScript}
   const selectedEnd = ENDS.find(x => x.c === selE)
   const setupProgress = [brand.trim(), industry.trim(), topic.trim(), background.trim(), selH, selT, selE].filter(Boolean).length
   const railCard = {
-    background: 'rgba(34, 38, 68, 0.88)',
+    background: css.card,
     border: `1px solid ${css.border}`,
     borderRadius: '22px',
     padding: '20px',
-    boxShadow: '0 18px 40px rgba(4, 6, 20, 0.26)',
+    boxShadow: '0 18px 40px rgba(0, 0, 0, 0.22)',
   } as const
 
   return (
@@ -506,6 +509,8 @@ ${qcScript}
       ['--accent' as any]: '#7c5cfc',
       ['--border-subtle' as any]: '#2a2a3a',
       ['--border-default' as any]: '#3a3a50',
+      ['--bg-surface' as any]: '#111118',
+      ['--bg-card' as any]: '#16161f',
       ['--text-primary' as any]: '#f0f0f5',
       ['--text-secondary' as any]: '#9090a8',
       ['--text-muted' as any]: '#5a5a72',
@@ -593,7 +598,7 @@ ${qcScript}
                   </div>
                 </div>
                 <div style={{ display: 'grid', gap: '10px' }}>
-                  <button onClick={generate} disabled={loading} style={{ cursor: loading ? 'not-allowed' : 'pointer', padding: '15px 18px', borderRadius: '16px', border: '1px solid rgba(130,126,255,0.48)', background: 'linear-gradient(135deg,#7b61ff,#5e8bff)', color: '#fff', fontSize: '15px', fontWeight: 700, boxShadow: '0 18px 36px rgba(93, 104, 255, 0.28)' }}>
+                  <button onClick={generate} disabled={loading} style={{ cursor: loading ? 'not-allowed' : 'pointer', padding: '15px 18px', borderRadius: '16px', border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontSize: '15px', fontWeight: 700, boxShadow: '0 18px 36px rgba(124, 92, 252, 0.22)' }}>
                     {loading ? '正在生成初稿…' : '生成劇本初稿'}
                   </button>
                   <div style={{ fontSize: '13px', color: css.ink3, lineHeight: 1.7 }}>
@@ -660,19 +665,19 @@ ${qcScript}
               )}
 
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                <button onClick={copyScript} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: '1px solid rgba(130,126,255,0.48)', background: 'linear-gradient(135deg,#7b61ff,#5e8bff)', color: '#fff', cursor: 'pointer' }}>
+                <button onClick={copyScript} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', cursor: 'pointer' }}>
                   {copied ? '已複製！' : '複製 Script'}
                 </button>
-                <button onClick={copyQcScript} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: 'rgba(255,255,255,0.05)', color: css.ink2, cursor: 'pointer' }}>
+                <button onClick={copyQcScript} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: css.surface, color: css.ink2, cursor: 'pointer' }}>
                   {copiedQc ? '已複製 QC 稿！' : '複製 QC 稿'}
                 </button>
-                <button onClick={analyzeEdits} disabled={analyzingEdits || !qcScript.trim()} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: 'rgba(255,255,255,0.05)', color: css.ink2, cursor: analyzingEdits ? 'not-allowed' : 'pointer', opacity: analyzingEdits ? 0.6 : 1 }}>
+                <button onClick={analyzeEdits} disabled={analyzingEdits || !qcScript.trim()} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: css.surface, color: css.ink2, cursor: analyzingEdits ? 'not-allowed' : 'pointer', opacity: analyzingEdits ? 0.6 : 1 }}>
                   {analyzingEdits ? '分析改稿中…' : '分析我改咗咩'}
                 </button>
                 <button onClick={uploadToDrive} disabled={uploading} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: '1px solid rgba(90,204,150,0.26)', background: uploadDone ? '#4a8a5c' : 'rgba(74,138,92,0.16)', color: uploadDone ? '#fff' : '#baf0cc', cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.6 : 1 }}>
                   {uploading ? '上傳中…' : uploadDone ? '✓ 已上傳 QC 稿到 Drive' : '上傳 QC 稿去 Drive'}
                 </button>
-                <button onClick={generate} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: 'rgba(255,255,255,0.05)', color: css.ink2, cursor: 'pointer' }}>
+                <button onClick={generate} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: css.surface, color: css.ink2, cursor: 'pointer' }}>
                   重新生成
                 </button>
               </div>
