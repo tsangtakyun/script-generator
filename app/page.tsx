@@ -219,6 +219,7 @@ export default function ScriptGenerator() {
   const [industry, setIndustry] = useState('飲食')
   const [topic, setTopic] = useState('')
   const [background, setBackground] = useState('')
+  const [scriptLocation, setScriptLocation] = useState('')
   const [selH, setSelH] = useState('H1')
   const [selT, setSelT] = useState('T1')
   const [selE, setSelE] = useState('E1')
@@ -338,9 +339,11 @@ export default function ScriptGenerator() {
     const params = new URLSearchParams(window.location.search)
     const topicParam = params.get('topic')
     const backgroundParam = params.get('background')
+    const locationParam = params.get('location')
     if (topicParam) setTopic(topicParam)
     if (backgroundParam) setBackground(backgroundParam)
-    if (topicParam || backgroundParam) setImportedFromIdea(true)
+    if (locationParam) setScriptLocation(locationParam)
+    if (topicParam || backgroundParam || locationParam) setImportedFromIdea(true)
   }, [])
 
   useEffect(() => {
@@ -482,6 +485,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         topic: topic || '',
         brand: brand || '',
         industry: industry || '',
+        location: scriptLocation || '',
         hook_code: selH || '',
         trans_code: selT || '',
         ending_code: selE || '',
