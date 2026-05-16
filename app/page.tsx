@@ -498,6 +498,18 @@ ${qcScript}
     setUploading(false)
   }
 
+  const handlePushToStoryboard = async () => {
+    if (!qcScript) return
+    await saveScript(qcScript)
+    const params = new URLSearchParams({
+      script: qcScript,
+      brand: brand || '',
+      topic: topic || '',
+      industry: industry || '',
+    })
+    window.open(`https://soon-storyboard.vercel.app?${params.toString()}`, '_blank')
+  }
+
   const StyleCard = ({ item, selected, onSelect }: { item: any, selected: boolean, onSelect: () => void }) => (
     <div onClick={onSelect} style={{
       cursor: 'pointer', padding: '15px 17px', borderRadius: css.radius,
@@ -568,9 +580,24 @@ ${qcScript}
                 <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>劇本工作台</span>
               </div>
               <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>3</div>
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>分鏡工作台</span>
+              <div
+                onClick={qcScript ? handlePushToStoryboard : undefined}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: qcScript ? 'pointer' : 'default' }}
+              >
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  background: qcScript ? 'transparent' : 'var(--border-subtle)',
+                  border: qcScript ? '2px solid var(--accent)' : '2px solid transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  color: qcScript ? 'var(--accent)' : 'var(--text-muted)',
+                  boxSizing: 'border-box',
+                }}>3</div>
+                <span style={{ fontSize: '13px', color: qcScript ? 'var(--accent)' : 'var(--text-muted)' }}>分鏡工作台</span>
               </div>
             </div>
           </section>
@@ -709,6 +736,11 @@ ${qcScript}
                 <button onClick={uploadToDrive} disabled={uploading} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: '1px solid rgba(90,204,150,0.26)', background: uploadDone ? '#4a8a5c' : 'rgba(74,138,92,0.16)', color: uploadDone ? '#fff' : '#baf0cc', cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.6 : 1 }}>
                   {uploading ? '上傳中…' : uploadDone ? '✓ 已上傳 QC 稿到 Drive' : '上傳 QC 稿去 Drive'}
                 </button>
+                {qcScript && (
+                  <button onClick={handlePushToStoryboard} style={{ background: '#7c5cfc', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                    🎬 推去分鏡工作台
+                  </button>
+                )}
                 <button onClick={generate} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: css.surface, color: css.ink2, cursor: 'pointer' }}>
                   重新生成
                 </button>
