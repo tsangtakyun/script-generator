@@ -386,11 +386,39 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     setTimeout(() => setCopiedQc(false), 2000)
   }
 
+  const saveScript = async (qcFinal: string) => {
+    try {
+      const { data: authData } = await supabase.auth.getUser()
+      const user = authData.user
+      if (!user?.id) return
+
+      await fetch('/api/scripts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          brand,
+          industry,
+          topic,
+          background,
+          hook_code: selH,
+          trans_code: selT,
+          ending_code: selE,
+          ai_draft: script,
+          qc_final: qcFinal,
+        }),
+      })
+    } catch {
+      // Auto-save should not block QC analysis or Drive upload.
+    }
+  }
+
   const analyzeEdits = async () => {
     if (!script.trim() || !qcScript.trim()) return
     setAnalyzingEdits(true)
     setError('')
     try {
+      await saveScript(qcScript)
       const prompt = `以下係同一條 script 的兩個版本。
 
 【AI 初稿】
@@ -453,6 +481,7 @@ ${qcScript}
     setUploading(true)
     setUploadDone(false)
     try {
+      await saveScript(finalContent)
       const title = `${brand || '未命名'} — ${topic || 'Script'}${qcScript ? ' (QC)' : ''}`
       const res = await fetch('/api/upload-drive', {
         method: 'POST',
@@ -647,7 +676,10 @@ ${qcScript}
                         {styleSaved ? '✓ 已加入 Style Memory' : `${styleMemory.length} 條 Style Memory`} · {styleStorageMode === 'supabase' ? 'Supabase' : 'Local'}
                       </div>
                     </div>
-                    <textarea value={qcScript} onChange={e => setQcScript(e.target.value)} style={{ ...inputStyle, minHeight: '340px', resize: 'vertical' as const, lineHeight: 1.8, background: 'rgba(255,255,255,0.06)' }} />
+                    <textarea value={qcScript} onChange={e => setQcScript(e.target.value)} style={{ ...inputStyle, minHeight: '340px', resize: 'vertical' as const, lineHeight: 1.8, background: css.surface }} />
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px', marginBottom: 0 }}>
+                      ✓ QC 稿會自動儲存至你的帳戶
+                    </p>
                   </div>
                 </div>
               </div>
