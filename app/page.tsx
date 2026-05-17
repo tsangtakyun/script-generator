@@ -770,43 +770,70 @@ ${qcScript}
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
       <div className="workspace-shell">
         <main className="workspace-main">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', gap: '16px' }}>
+            <div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 4px' }}>SOON 創作工作台</p>
+              <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>IG Reel 劇本工作台</h1>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '6px 0 0' }}>填寫以下資料，AI 即時為你生成 IG Reel 劇本</p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <button
+                onClick={() => {
+                  setHistoryOpen(true)
+                  loadHistory()
+                }}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #7c5cfc',
+                  color: '#7c5cfc',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                📋 歷史記錄
+              </button>
+              <button
+                onClick={handlePushToStoryboard}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #0ea5e9',
+                  color: '#0ea5e9',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                🎬 分鏡工作台
+              </button>
+            </div>
+          </div>
           {/* 建議圖片尺寸：1920×280px */}
           <img
             src="/script-banner.jpg"
             alt="IG Reel 劇本工作台"
             style={{
               width: '100%',
-              height: '200px',
+              height: '160px',
               objectFit: 'cover',
               objectPosition: 'center 40%',
               borderRadius: '12px',
               display: 'block',
-              marginBottom: '22px',
+              marginBottom: '16px',
+              marginTop: '12px',
             }}
           />
 
           <section className="workspace-grid">
             <div style={{ ...railCard, padding: '26px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ marginBottom: '20px' }}>
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em' }}>劇本設定</span>
-                <button
-                  onClick={() => {
-                    setHistoryOpen(true)
-                    loadHistory()
-                  }}
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid var(--border-default)',
-                    color: 'var(--text-secondary)',
-                    borderRadius: '8px',
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  📋 歷史記錄
-                </button>
               </div>
               <div style={{ display: 'grid', gap: '26px' }}>
                 <div>
