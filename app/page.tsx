@@ -567,7 +567,6 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: user.id,
-          workspace_id: workspaceId || null,
           brand,
           industry,
           topic,
@@ -592,10 +591,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     }
     setHistoryLoading(true)
     try {
-      const scriptsUrl = workspaceId
-        ? `/api/scripts?user_id=${session.user.id}&workspace_id=${encodeURIComponent(workspaceId)}`
-        : `/api/scripts?user_id=${session.user.id}`
-      const res = await fetch(scriptsUrl)
+      const res = await fetch(`/api/scripts?user_id=${session.user.id}`)
       const data = await res.json()
       console.log('[History Debug] 回傳:', data)
       setHistoryList(data.scripts || [])
