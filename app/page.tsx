@@ -246,6 +246,7 @@ export default function ScriptGenerator() {
   const [historyLoading, setHistoryLoading] = useState(false)
   const [session, setSession] = useState<any>(null)
   const [brandFromSettings, setBrandFromSettings] = useState(false)
+  const [workspaceId, setWorkspaceId] = useState('')
 
   const loadBrandFromSettings = async (userId: string, metadata: any = {}) => {
     console.log('[Brand Debug] userId:', userId)
@@ -358,9 +359,55 @@ export default function ScriptGenerator() {
       setSession(nextSession)
     })
 
+    const applySoonAuth = async (payload: any) => {
+      const accessToken = payload?.accessToken || payload?.token
+      const refreshToken = payload?.refreshToken
+      const nextWorkspaceId = payload?.workspaceId || ''
+      if (nextWorkspaceId) setWorkspaceId(nextWorkspaceId)
+      if (!accessToken || !refreshToken) return
+
+      const { data } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+      if (mounted) setSession(data.session)
+    }
+
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const encodedAuth = hashParams.get('soon_auth')
+    if (encodedAuth) {
+      try {
+        void applySoonAuth(JSON.parse(window.atob(decodeURIComponent(encodedAuth))))
+        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
+      } catch {
+        // Ignore malformed embedded auth payloads.
+      }
+    }
+
+    const handleSoonAuth = (event: MessageEvent) => {
+      if (event.data?.type !== 'SOON_AUTH') return
+      const isAllowedOrigin =
+        event.origin === 'https://soon-core.vercel.app' ||
+        /^https:\/\/soon-core-[\w-]+\.vercel\.app$/.test(event.origin) ||
+        event.origin === 'http://localhost:3000'
+      if (!isAllowedOrigin) return
+      void applySoonAuth(event.data)
+    }
+
+    const notifyParent = () => {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'SOON_TOOL_READY', tool: 'script-generator' }, '*')
+      }
+    }
+    notifyParent()
+    const timers = [700, 1800, 3200].map((delay) => window.setTimeout(notifyParent, delay))
+    window.addEventListener('message', handleSoonAuth)
+
     return () => {
       mounted = false
       listener.subscription.unsubscribe()
+      window.removeEventListener('message', handleSoonAuth)
+      timers.forEach((timer) => window.clearTimeout(timer))
     }
   }, [])
 
@@ -489,6 +536,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         hook_code: selH || '',
         trans_code: selT || '',
         ending_code: selE || '',
+        workspace_id: workspaceId || null,
       }, '*')
     } catch (err: any) {
       setError('出現錯誤：' + err.message)
@@ -519,6 +567,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: user.id,
+          workspace_id: workspaceId || null,
           brand,
           industry,
           topic,
@@ -543,7 +592,10 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     }
     setHistoryLoading(true)
     try {
-      const res = await fetch(`/api/scripts?user_id=${session.user.id}`)
+      const scriptsUrl = workspaceId
+        ? `/api/scripts?user_id=${session.user.id}&workspace_id=${encodeURIComponent(workspaceId)}`
+        : `/api/scripts?user_id=${session.user.id}`
+      const res = await fetch(scriptsUrl)
       const data = await res.json()
       console.log('[History Debug] 回傳:', data)
       setHistoryList(data.scripts || [])

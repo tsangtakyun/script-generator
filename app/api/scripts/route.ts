@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
     ending_code,
     ai_draft,
     qc_final,
+    workspace_id,
   } = body
 
   if (!user_id) return NextResponse.json({ error: 'no user' }, { status: 401 })
@@ -47,14 +48,20 @@ export async function POST(req: NextRequest) {
     ending_code,
     ai_draft,
     qc_final,
+    workspace_id: workspace_id || null,
     updated_at: new Date().toISOString(),
   }
 
-  const { data: existing, error: findError } = await supabase
+  let findQuery = supabase
     .from('scripts')
     .select('id')
     .eq('user_id', user_id)
     .eq('topic', topic || '')
+
+  if (workspace_id) findQuery = findQuery.eq('workspace_id', workspace_id)
+  else findQuery = findQuery.is('workspace_id', null)
+
+  const { data: existing, error: findError } = await findQuery
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -81,13 +88,18 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const user_id = searchParams.get('user_id')
+  const workspaceId = searchParams.get('workspace_id')
 
   if (!user_id) return NextResponse.json({ error: 'no user' }, { status: 401 })
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('scripts')
     .select('*')
     .eq('user_id', user_id)
+
+  if (workspaceId) query = query.eq('workspace_id', workspaceId)
+
+  const { data, error } = await query
     .order('updated_at', { ascending: false })
     .limit(20)
 
