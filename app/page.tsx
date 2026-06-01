@@ -567,6 +567,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: user.id,
+          user_email: user.email || '',
           brand,
           industry,
           topic,
@@ -591,7 +592,11 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     }
     setHistoryLoading(true)
     try {
-      const res = await fetch(`/api/scripts?user_id=${session.user.id}`)
+      const params = new URLSearchParams({
+        user_id: session.user.id,
+        email: session.user.email || '',
+      })
+      const res = await fetch(`/api/scripts?${params.toString()}`)
       const data = await res.json()
       console.log('[History Debug] 回傳:', data)
       setHistoryList(data.scripts || [])

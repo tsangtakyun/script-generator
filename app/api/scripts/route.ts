@@ -12,6 +12,39 @@ function getSupabaseAdmin() {
   return createClient(url, serviceRoleKey)
 }
 
+function normalizeEmail(email?: string | null) {
+  return email?.trim().toLowerCase() || ''
+}
+
+async function resolveScriptIdentity(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  email?: string | null
+) {
+  const ids = new Set<string>()
+  if (userId) ids.add(userId)
+
+  const normalizedEmail = normalizeEmail(email)
+  if (!normalizedEmail) return { ids: Array.from(ids), primaryUserId: userId }
+
+  const { data } = await supabase
+    .from('user_credits')
+    .select('user_id, egg_user_id')
+    .eq('email', normalizedEmail)
+    .maybeSingle()
+
+  const creditsRow = data as { user_id?: string | null; egg_user_id?: string | null } | null
+  const linkedUserId = creditsRow?.user_id ? String(creditsRow.user_id) : ''
+  const linkedEggUserId = creditsRow?.egg_user_id ? String(creditsRow.egg_user_id) : ''
+  if (linkedUserId) ids.add(linkedUserId)
+  if (linkedEggUserId) ids.add(linkedEggUserId)
+
+  return {
+    ids: Array.from(ids),
+    primaryUserId: linkedEggUserId || linkedUserId || userId,
+  }
+}
+
 export async function POST(req: NextRequest) {
   let supabase
   try {
@@ -23,6 +56,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const {
     user_id,
+    user_email,
+    email,
     brand,
     industry,
     topic,
@@ -35,9 +70,10 @@ export async function POST(req: NextRequest) {
   } = body
 
   if (!user_id) return NextResponse.json({ error: 'no user' }, { status: 401 })
+  const identity = await resolveScriptIdentity(supabase, user_id, user_email || email)
 
   const payload = {
-    user_id,
+    user_id: identity.primaryUserId,
     brand,
     industry,
     topic,
@@ -53,7 +89,7 @@ export async function POST(req: NextRequest) {
   const { data: existing, error: findError } = await supabase
     .from('scripts')
     .select('id')
-    .eq('user_id', user_id)
+    .in('user_id', identity.ids)
     .eq('topic', topic || '')
     .order('updated_at', { ascending: false })
     .limit(1)
@@ -81,14 +117,17 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const user_id = searchParams.get('user_id')
+  const email = searchParams.get('email')
 
   if (!user_id) return NextResponse.json({ error: 'no user' }, { status: 401 })
+  const identity = await resolveScriptIdentity(supabase, user_id, email)
 
   const { data, error } = await supabase
     .from('scripts')
     .select('*')
-    .eq('user_id', user_id)
-    .order('updated_at', { ascending: false })
+    .in('user_id', identity.ids)
+    .order('updated_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
     .limit(20)
 
   if (error) return NextResponse.json({ error }, { status: 500 })
