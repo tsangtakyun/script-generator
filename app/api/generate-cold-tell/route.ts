@@ -13,7 +13,7 @@ function getSupabaseAdmin() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!url || !serviceRoleKey) {
-    throw new Error('Supabase admin env not configured')
+    throw new Error('Supabase service role key 尚未設定')
   }
 
   return createClient(url, serviceRoleKey)
@@ -24,7 +24,7 @@ function getSupabaseAnon() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!url || !anonKey) {
-    throw new Error('Supabase anon env not configured')
+    throw new Error('Supabase anon key 尚未設定')
   }
 
   return createClient(url, anonKey)
@@ -131,10 +131,10 @@ function extractTextAndSources(content: any[]) {
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
+    if (!apiKey) return NextResponse.json({ error: 'Anthropic API key 尚未設定' }, { status: 500 })
 
     const user = await getAuthenticatedUser(request)
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) return NextResponse.json({ error: '尚未登入或登入狀態已失效' }, { status: 401 })
 
     const body = await request.json()
     const profileId = String(body.profile_id || '')
@@ -142,8 +142,8 @@ export async function POST(request: NextRequest) {
     const topic = String(body.topic || '').trim()
     const sourceMode = sourceMaterial ? 'compress' : 'expand'
 
-    if (!profileId) return NextResponse.json({ error: 'Missing profile_id' }, { status: 400 })
-    if (!sourceMaterial && !topic) return NextResponse.json({ error: 'Missing topic or source' }, { status: 400 })
+    if (!profileId) return NextResponse.json({ error: '缺少冷敘事設定 ID' }, { status: 400 })
+    if (!sourceMaterial && !topic) return NextResponse.json({ error: '請填寫主題，或貼上來源內容' }, { status: 400 })
 
     const admin = getSupabaseAdmin()
     const { data: profile, error: profileError } = await admin
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 })
-    if (!profile) return NextResponse.json({ error: 'Cold Tell profile not found' }, { status: 404 })
+    if (!profile) return NextResponse.json({ error: '找不到已啟用的冷敘事設定' }, { status: 404 })
 
     const frameworkOptions = asArray(profile.framework_options)
     const tenseOptions = asArray(profile.tense_options)
@@ -214,11 +214,11 @@ export async function POST(request: NextRequest) {
     })
     const data = await upstream.json()
     if (!upstream.ok) {
-      return NextResponse.json({ error: data?.error?.message || 'Anthropic request failed' }, { status: upstream.status })
+      return NextResponse.json({ error: data?.error?.message || 'Anthropic 請求失敗' }, { status: upstream.status })
     }
 
     const { text, sources } = extractTextAndSources(Array.isArray(data.content) ? data.content : [])
-    if (!text) return NextResponse.json({ error: 'Claude returned no text' }, { status: 502 })
+    if (!text) return NextResponse.json({ error: 'Claude 沒有回傳文字內容' }, { status: 502 })
 
     const profileSnapshot = {
       profile_id: profile.id,
@@ -259,6 +259,6 @@ export async function POST(request: NextRequest) {
       row: scriptRow,
     })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Cold Tell generation failed' }, { status: 500 })
+    return NextResponse.json({ error: error.message || '冷敘事生成失敗' }, { status: 500 })
   }
 }

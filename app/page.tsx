@@ -364,6 +364,13 @@ export default function ScriptGenerator() {
   const loadColdTellProfile = async () => {
     if (coldProfile) return coldProfile
     if (coldProfileLoading) return null
+    const {
+      data: { session: currentSession },
+    } = await supabase.auth.getSession()
+    if (!currentSession?.access_token) {
+      setError('正在連接登入狀態，請稍等再試。')
+      return null
+    }
     setColdProfileLoading(true)
     setError('')
     try {
@@ -376,7 +383,7 @@ export default function ScriptGenerator() {
         .maybeSingle()
 
       if (error) throw error
-      if (!data) throw new Error('Cold Tell profile not found')
+      if (!data) throw new Error('找不到已啟用的冷敘事設定')
 
       const profile = data as ColdTellProfile
       setColdProfile(profile)
@@ -394,7 +401,7 @@ export default function ScriptGenerator() {
       if (firstPreset) applyColdPreset(firstPreset)
       return profile
     } catch (err: any) {
-      setError('Cold Tell profile 載入失敗：' + err.message)
+      setError('冷敘事設定載入失敗：' + err.message)
       return null
     } finally {
       setColdProfileLoading(false)
@@ -556,10 +563,10 @@ export default function ScriptGenerator() {
   }, [session?.user?.id])
 
   useEffect(() => {
-    if (generatorType === 'cold_tell') {
+    if (generatorType === 'cold_tell' && session?.access_token) {
       void loadColdTellProfile()
     }
-  }, [generatorType])
+  }, [generatorType, session?.access_token])
 
   useEffect(() => {
     const bootstrapStyleMemory = async () => {
@@ -732,7 +739,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         }),
       })
       const data = await res.json()
-      if (!res.ok || data.error) throw new Error(data.error || 'Cold Tell generation failed')
+      if (!res.ok || data.error) throw new Error(data.error || '冷敘事生成失敗')
 
       const generated = data.script || ''
       setScript(generated)
@@ -744,14 +751,14 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         generator_type: 'cold_tell',
         qc_final: generated,
         ai_draft: generated,
-        topic: topic || activeProfile.name || 'Cold Tell',
-        brand: activeProfile.name || 'Cold Tell',
+        topic: topic || activeProfile.name || '冷敘事',
+        brand: activeProfile.name || '冷敘事',
         industry: 'cold_tell',
         location: '',
         workspace_id: workspaceId || null,
       }, '*')
     } catch (err: any) {
-      setError('Cold Tell 生成失敗：' + err.message)
+      setError('冷敘事生成失敗：' + err.message)
     } finally {
       setLoading(false)
     }
@@ -920,7 +927,7 @@ ${qcScript}
     await saveScript(qcScript)
     const params = new URLSearchParams({
       script: qcScript,
-      brand: generatorType === 'cold_tell' ? (coldProfile?.name || 'Cold Tell') : (brand || ''),
+      brand: generatorType === 'cold_tell' ? (coldProfile?.name || '冷敘事') : (brand || ''),
       topic: topic || '',
       industry: generatorType === 'cold_tell' ? 'cold_tell' : (industry || ''),
     })
@@ -1104,8 +1111,8 @@ ${qcScript}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '26px' }}>
                 {[
-                  { id: 'host_led' as GeneratorType, label: '主持敘事 Host Tell' },
-                  { id: 'cold_tell' as GeneratorType, label: '冷敘事 Cold Tell' },
+                  { id: 'host_led' as GeneratorType, label: '主持敘事' },
+                  { id: 'cold_tell' as GeneratorType, label: '冷敘事' },
                 ].map((type) => (
                   <button
                     key={type.id}
@@ -1191,29 +1198,29 @@ ${qcScript}
               {generatorType === 'cold_tell' && (
                 <div style={{ display: 'grid', gap: '24px' }}>
                   <div style={{ display: 'grid', gap: '10px' }}>
-                    <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3 }}>SOURCE</div>
-                    <div style={{ fontSize: '18px', fontWeight: 600 }}>貼上 source（thread／新聞／逐字稿，留空就由 topic 自己展開）</div>
+                    <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3 }}>來源內容</div>
+                    <div style={{ fontSize: '18px', fontWeight: 600 }}>貼上來源內容（討論串／新聞／逐字稿，留空就由主題自己展開）</div>
                     <textarea
                       value={coldSource}
                       onChange={(e) => setColdSource(e.target.value)}
-                      placeholder="Paste thread, news article, transcript, notes..."
+                      placeholder="貼上討論串、新聞、逐字稿或筆記..."
                       style={{ ...inputStyle, minHeight: '180px', resize: 'vertical' as const, lineHeight: 1.7 }}
                     />
                   </div>
 
                   <div style={{ display: 'grid', gap: '10px' }}>
-                    <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3 }}>TOPIC</div>
+                    <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3 }}>主題</div>
                     <input
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
-                      placeholder="source 留空時，用呢個 topic 自己展開"
+                      placeholder="來源內容留空時，用呢個主題自己展開"
                       style={inputStyle}
                     />
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: css.ink2, marginBottom: '10px' }}>Preset</div>
-                    {coldProfileLoading && <p style={{ color: css.ink3, fontSize: '13px', margin: 0 }}>Loading Cold Tell profile...</p>}
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: css.ink2, marginBottom: '10px' }}>預設組合</div>
+                    {coldProfileLoading && <p style={{ color: css.ink3, fontSize: '13px', margin: 0 }}>正在載入冷敘事設定...</p>}
                     {!coldProfileLoading && (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
                         {coldPresetOptions.map((preset) => {
@@ -1255,11 +1262,11 @@ ${qcScript}
 
                   {coldAdvancedOpen && (
                     <div style={{ display: 'grid', gap: '20px' }}>
-                      <ColdOptionGroup title="Framework" options={coldFrameworkOptions} value={coldFramework} onSelect={setColdFramework} />
-                      <ColdOptionGroup title="Tense" options={coldTenseOptions} value={coldTense} onSelect={setColdTense} />
-                      <ColdOptionGroup title="Ending" options={coldEndingOptions} value={coldEnding} onSelect={setColdEnding} />
-                      <ColdOptionGroup title="Plugins" options={coldPluginOptions} values={coldPlugins} multi onSelect={toggleColdPlugin} />
-                      <ColdOptionGroup title="Hook" options={coldMainHookOptions} value={coldHook} onSelect={setColdHook} />
+                      <ColdOptionGroup title="敘事框架" options={coldFrameworkOptions} value={coldFramework} onSelect={setColdFramework} />
+                      <ColdOptionGroup title="時態" options={coldTenseOptions} value={coldTense} onSelect={setColdTense} />
+                      <ColdOptionGroup title="結尾" options={coldEndingOptions} value={coldEnding} onSelect={setColdEnding} />
+                      <ColdOptionGroup title="插件" options={coldPluginOptions} values={coldPlugins} multi onSelect={toggleColdPlugin} />
+                      <ColdOptionGroup title="開場" options={coldMainHookOptions} value={coldHook} onSelect={setColdHook} />
                       {coldCounterOption && (
                         <label style={{ display: 'flex', alignItems: 'center', gap: '10px', color: css.ink2, fontSize: '14px', cursor: 'pointer' }}>
                           <input
@@ -1278,7 +1285,7 @@ ${qcScript}
                       {loading ? '生成中...' : '生成冷敘事劇本'}
                     </button>
                     <div style={{ fontSize: '13px', color: css.ink3, lineHeight: 1.7 }}>
-                      {coldSource.trim() ? 'Source mode: compress' : 'Source mode: expand'}
+                      {coldSource.trim() ? '來源模式：壓縮' : '來源模式：展開'}
                     </div>
                   </div>
                 </div>
@@ -1296,7 +1303,7 @@ ${qcScript}
             <section style={{ display: 'grid', gap: '18px' }}>
               <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3 }}>
                 {generatorType === 'cold_tell'
-                  ? ['冷敘事 Cold Tell', coldSource.trim() ? 'compress' : 'expand', topic].filter(Boolean).join('  ·  ')
+                  ? ['冷敘事', coldSource.trim() ? '壓縮' : '展開', topic].filter(Boolean).join('  ·  ')
                   : [brand, industry, topic].filter(Boolean).join('  ·  ')}
               </div>
 
