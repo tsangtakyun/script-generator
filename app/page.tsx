@@ -114,6 +114,23 @@ function profileOptions(value: unknown): ProfileOption[] {
   return Array.isArray(value) ? value.filter((item) => item && typeof item === 'object') as ProfileOption[] : []
 }
 
+function coldPresetDisplay(preset: ProfileOption | null | undefined) {
+  const id = profileOptionId(preset)
+  const labels: Record<string, { emoji: string; label: string; desc: string }> = {
+    dark_doom: { emoji: '🗡️', label: '黑暗宿命', desc: '適合沉重、崩壞、代價感強的故事。' },
+    twist_justice: { emoji: '⚖️', label: '反轉公義', desc: '適合由誤解、揭露到報應式收束。' },
+    mind_mechanism: { emoji: '🧠', label: '心理機制', desc: '適合拆解人性、慣性、群體反應。' },
+    clever_loophole: { emoji: '🏛️', label: '聰明漏洞', desc: '適合制度漏洞、規則操作、灰色地帶。' },
+    epic_awe: { emoji: '🌐', label: '宏大震撼', desc: '適合科技、歷史、規模感大的題材。' },
+    creepy_loop: { emoji: '🔁', label: '詭異循環', desc: '適合重複、失控、越想越不安的故事。' },
+  }
+  return labels[id] || {
+    emoji: String(preset?.emoji || ''),
+    label: profileOptionLabel(preset),
+    desc: profileOptionDesc(preset),
+  }
+}
+
 function makeFingerprint(topic: string, aiDraft: string, qcFinal: string) {
   const source = `${topic}::${aiDraft}::${qcFinal}`
   let hash = 0
@@ -734,8 +751,10 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
       const {
         data: { session: currentSession },
       } = await supabase.auth.getSession()
-      if (!currentSession?.access_token) {
-        throw new Error('請先登入 SOON，再生成冷敘事劇本。')
+      const activeSession = currentSession || session
+      if (!activeSession?.access_token) {
+        window.parent?.postMessage({ type: 'SOON_TOOL_READY', tool: 'script-generator' }, '*')
+        throw new Error('未收到 SOON 登入狀態，請重新開啟工具或稍等數秒再試。')
       }
 
       const activeSelection = presetSelectionOverride || coldPresetSelection
@@ -754,7 +773,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${currentSession.access_token}`,
+            Authorization: `Bearer ${activeSession.access_token}`,
           },
           body: JSON.stringify({
             source_material: coldSource,
@@ -778,8 +797,8 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         setColdAutoSuggestion({
           preset_id: profileOptionId(selectedPreset),
           reason: suggestReason,
-          label: profileOptionLabel(selectedPreset),
-          emoji: String(selectedPreset.emoji || ''),
+          label: coldPresetDisplay(selectedPreset).label,
+          emoji: coldPresetDisplay(selectedPreset).emoji,
         })
       } else if (activeSelection !== 'custom') {
         selectedPreset = findColdPreset(activeProfile, activeSelection)
@@ -798,7 +817,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(currentSession?.access_token ? { Authorization: `Bearer ${currentSession.access_token}` } : {}),
+          Authorization: `Bearer ${activeSession.access_token}`,
         },
         body: JSON.stringify({
           profile_id: activeProfile.id,
@@ -1086,6 +1105,49 @@ ${qcScript}
     </div>
   )
 
+  const PresetCard = ({
+    id,
+    emoji,
+    label,
+    desc,
+    selected,
+    onSelect,
+  }: {
+    id: string
+    emoji?: string
+    label: string
+    desc: string
+    selected: boolean
+    onSelect: () => void
+  }) => (
+    <button
+      type="button"
+      onClick={onSelect}
+      style={{
+        textAlign: 'left',
+        background: selected ? 'var(--accent)' : 'var(--bg-card)',
+        border: `1px solid ${selected ? 'var(--accent)' : 'var(--border-subtle)'}`,
+        borderRadius: '10px',
+        padding: '14px 16px',
+        cursor: 'pointer',
+        minHeight: '126px',
+        display: 'grid',
+        alignContent: 'start',
+        gap: '9px',
+        color: selected ? '#fff' : 'var(--text-primary)',
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 700, lineHeight: 1.35 }}>
+        {emoji && <span aria-hidden="true">{emoji}</span>}
+        <span>{label}</span>
+      </div>
+      <div style={{ fontSize: '12px', lineHeight: 1.6, color: selected ? 'rgba(255,255,255,0.78)' : 'var(--text-secondary)' }}>
+        {desc}
+      </div>
+    </button>
+  )
+
   const inputStyle = {
     width: '100%', background: css.inputBg, border: `1px solid ${css.border}`,
     borderRadius: css.radius, padding: '16px 20px', fontSize: '15px',
@@ -1300,28 +1362,25 @@ ${qcScript}
                     <div style={{ fontSize: '13px', fontWeight: 600, color: css.ink2, marginBottom: '10px' }}>預設組合</div>
                     {coldProfileLoading && <p style={{ color: css.ink3, fontSize: '13px', margin: 0 }}>正在載入冷敘事設定...</p>}
                     {!coldProfileLoading && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
-                        <StyleCard
-                          item={{
-                            id: 'AUTO',
-                            label: '✨ 自動（建議）',
-                            desc: 'AI 先分析來源內容或主題，再從 6 個套餐揀一個。',
-                            example: '',
-                          }}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '10px' }}>
+                        <PresetCard
+                          id="auto"
+                          emoji="✨"
+                          label="自動（建議）"
+                          desc="AI 先分析內容，再從 6 個套餐揀一個。"
                           selected={coldPresetSelection === 'auto'}
                           onSelect={() => setColdPresetSelection('auto')}
                         />
                         {coldPresetOptions.map((preset) => {
                           const id = profileOptionId(preset)
+                          const display = coldPresetDisplay(preset)
                           return (
-                            <StyleCard
+                            <PresetCard
                               key={id}
-                              item={{
-                                id,
-                                label: `${preset.emoji ? `${preset.emoji} ` : ''}${profileOptionLabel(preset)}`,
-                                desc: profileOptionDesc(preset),
-                                example: '',
-                              }}
+                              id={id}
+                              emoji={display.emoji}
+                              label={display.label}
+                              desc={display.desc}
                               selected={coldPresetSelection === id}
                               onSelect={() => applyColdPreset(preset)}
                             />
@@ -1403,15 +1462,14 @@ ${qcScript}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '10px' }}>
                     {coldPresetOptions.map((preset) => {
                       const id = profileOptionId(preset)
+                      const display = coldPresetDisplay(preset)
                       return (
-                        <StyleCard
+                        <PresetCard
                           key={id}
-                          item={{
-                            id,
-                            label: `${preset.emoji ? `${preset.emoji} ` : ''}${profileOptionLabel(preset)}`,
-                            desc: profileOptionDesc(preset),
-                            example: '',
-                          }}
+                          id={id}
+                          emoji={display.emoji}
+                          label={display.label}
+                          desc={display.desc}
                           selected={coldAutoSuggestion.preset_id === id}
                           onSelect={() => {
                             applyColdPreset(preset)
