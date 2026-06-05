@@ -54,7 +54,65 @@ type StyleMemoryEntry = {
   qcFinal?: string
 }
 
+type GeneratorType = 'host_led' | 'cold_tell'
+
+type ProfileOption = {
+  id?: string
+  value?: string
+  key?: string
+  label?: string
+  name?: string
+  title?: string
+  desc?: string
+  description?: string
+  emoji?: string
+  skeleton?: string
+  feel?: string
+  note?: string
+  template?: string
+  toggle?: boolean
+  plugins?: string[]
+  framework?: string
+  framework_id?: string
+  tense?: string
+  tense_id?: string
+  ending?: string
+  ending_id?: string
+  hook?: string
+  hook_id?: string
+  counter_instinct?: boolean
+}
+
+type ColdTellProfile = {
+  id: string
+  generator_type: 'cold_tell'
+  name: string
+  description?: string
+  framework_options?: ProfileOption[]
+  tense_options?: ProfileOption[]
+  ending_options?: ProfileOption[]
+  plugin_options?: ProfileOption[]
+  hook_options?: ProfileOption[]
+  presets?: ProfileOption[]
+}
+
 const STYLE_MEMORY_KEY = 'soon-script-style-memory-v1'
+
+function profileOptionId(option: ProfileOption | null | undefined) {
+  return String(option?.id ?? option?.value ?? option?.key ?? '')
+}
+
+function profileOptionLabel(option: ProfileOption | null | undefined) {
+  return String(option?.label ?? option?.name ?? option?.title ?? profileOptionId(option) ?? '')
+}
+
+function profileOptionDesc(option: ProfileOption | null | undefined) {
+  return String(option?.desc ?? option?.description ?? option?.skeleton ?? option?.feel ?? option?.note ?? option?.template ?? '')
+}
+
+function profileOptions(value: unknown): ProfileOption[] {
+  return Array.isArray(value) ? value.filter((item) => item && typeof item === 'object') as ProfileOption[] : []
+}
 
 function makeFingerprint(topic: string, aiDraft: string, qcFinal: string) {
   const source = `${topic}::${aiDraft}::${qcFinal}`
@@ -247,6 +305,27 @@ export default function ScriptGenerator() {
   const [session, setSession] = useState<any>(null)
   const [brandFromSettings, setBrandFromSettings] = useState(false)
   const [workspaceId, setWorkspaceId] = useState('')
+  const [generatorType, setGeneratorType] = useState<GeneratorType>('host_led')
+  const [coldProfile, setColdProfile] = useState<ColdTellProfile | null>(null)
+  const [coldProfileLoading, setColdProfileLoading] = useState(false)
+  const [coldSource, setColdSource] = useState('')
+  const [coldFramework, setColdFramework] = useState('')
+  const [coldTense, setColdTense] = useState('')
+  const [coldEnding, setColdEnding] = useState('')
+  const [coldHook, setColdHook] = useState('')
+  const [coldPlugins, setColdPlugins] = useState<string[]>([])
+  const [coldCounterInstinct, setColdCounterInstinct] = useState(false)
+  const [coldAdvancedOpen, setColdAdvancedOpen] = useState(false)
+  const [coldSources, setColdSources] = useState<Array<{ title: string; url: string }>>([])
+
+  const coldFrameworkOptions = profileOptions(coldProfile?.framework_options)
+  const coldTenseOptions = profileOptions(coldProfile?.tense_options)
+  const coldEndingOptions = profileOptions(coldProfile?.ending_options)
+  const coldPluginOptions = profileOptions(coldProfile?.plugin_options)
+  const coldHookOptions = profileOptions(coldProfile?.hook_options)
+  const coldMainHookOptions = coldHookOptions.filter((option) => !option.toggle)
+  const coldCounterOption = coldHookOptions.find((option) => profileOptionId(option) === 'counter_instinct' || option.toggle)
+  const coldPresetOptions = profileOptions(coldProfile?.presets).slice(0, 6)
 
   const loadBrandFromSettings = async (userId: string, metadata: any = {}) => {
     console.log('[Brand Debug] userId:', userId)
@@ -280,6 +359,65 @@ export default function ScriptGenerator() {
         setBrandFromSettings(true)
       }
     }
+  }
+
+  const loadColdTellProfile = async () => {
+    if (coldProfile) return coldProfile
+    if (coldProfileLoading) return null
+    setColdProfileLoading(true)
+    setError('')
+    try {
+      const { data, error } = await supabase
+        .from('style_profiles')
+        .select('id,generator_type,name,description,framework_options,tense_options,ending_options,plugin_options,hook_options,presets')
+        .eq('generator_type', 'cold_tell')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data) throw new Error('Cold Tell profile not found')
+
+      const profile = data as ColdTellProfile
+      setColdProfile(profile)
+
+      const frameworks = profileOptions(profile.framework_options)
+      const tenses = profileOptions(profile.tense_options)
+      const endings = profileOptions(profile.ending_options)
+      const hooks = profileOptions(profile.hook_options).filter((option) => !option.toggle)
+      setColdFramework((current) => current || profileOptionId(frameworks[0]))
+      setColdTense((current) => current || profileOptionId(tenses[0]))
+      setColdEnding((current) => current || profileOptionId(endings[0]))
+      setColdHook((current) => current || profileOptionId(hooks[0]))
+
+      const firstPreset = profileOptions(profile.presets)[0]
+      if (firstPreset) applyColdPreset(firstPreset)
+      return profile
+    } catch (err: any) {
+      setError('Cold Tell profile 載入失敗：' + err.message)
+      return null
+    } finally {
+      setColdProfileLoading(false)
+    }
+  }
+
+  const applyColdPreset = (preset: ProfileOption) => {
+    const framework = String(preset.framework ?? preset.framework_id ?? '')
+    const tense = String(preset.tense ?? preset.tense_id ?? '')
+    const ending = String(preset.ending ?? preset.ending_id ?? '')
+    const hook = String(preset.hook ?? preset.hook_id ?? '')
+    if (framework) setColdFramework(framework)
+    if (tense) setColdTense(tense)
+    if (ending) setColdEnding(ending)
+    if (hook) setColdHook(hook)
+    if (Array.isArray(preset.plugins)) setColdPlugins(preset.plugins.map(String))
+    setColdCounterInstinct(Boolean(preset.counter_instinct))
+  }
+
+  const toggleColdPlugin = (pluginId: string) => {
+    setColdPlugins((current) =>
+      current.includes(pluginId) ? current.filter((id) => id !== pluginId) : [...current, pluginId]
+    )
   }
 
   const persistLocalMemory = (entries: StyleMemoryEntry[]) => {
@@ -418,6 +556,12 @@ export default function ScriptGenerator() {
   }, [session?.user?.id])
 
   useEffect(() => {
+    if (generatorType === 'cold_tell') {
+      void loadColdTellProfile()
+    }
+  }, [generatorType])
+
+  useEffect(() => {
     const bootstrapStyleMemory = async () => {
       let localEntries: StyleMemoryEntry[] = []
       try {
@@ -473,7 +617,7 @@ export default function ScriptGenerator() {
     bootstrapStyleMemory()
   }, [])
 
-  const generate = async () => {
+  const generateHostLed = async () => {
     if (!topic.trim()) return
     setLoading(true)
     setScript('')
@@ -544,6 +688,83 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     setLoading(false)
   }
 
+  const generateColdTell = async () => {
+    const activeProfile = coldProfile || await loadColdTellProfile()
+    if (!activeProfile) return
+    if (!coldSource.trim() && !topic.trim()) {
+      setError('請填寫 topic，或貼上 source。')
+      return
+    }
+
+    setLoading(true)
+    setScript('')
+    setQcScript('')
+    setError('')
+    setUploadDone(false)
+    setDriveUrl('')
+    setEditSummary('')
+    setStyleRulesPreview([])
+    setStyleSaved(false)
+    setColdSources([])
+
+    try {
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession()
+
+      const res = await fetch('/api/generate-cold-tell', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(currentSession?.access_token ? { Authorization: `Bearer ${currentSession.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          profile_id: activeProfile.id,
+          framework: coldFramework,
+          tense: coldTense,
+          ending: coldEnding,
+          plugins: coldPlugins,
+          hook: coldHook,
+          counter_instinct: coldCounterInstinct,
+          source_material: coldSource,
+          topic,
+          workspace_id: workspaceId || null,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error || 'Cold Tell generation failed')
+
+      const generated = data.script || ''
+      setScript(generated)
+      setQcScript(generated)
+      setColdSources(Array.isArray(data.sources) ? data.sources : [])
+      window.parent.postMessage({
+        type: 'SOON_CREATE_DOC',
+        template_type: 'ig_script',
+        generator_type: 'cold_tell',
+        qc_final: generated,
+        ai_draft: generated,
+        topic: topic || activeProfile.name || 'Cold Tell',
+        brand: activeProfile.name || 'Cold Tell',
+        industry: 'cold_tell',
+        location: '',
+        workspace_id: workspaceId || null,
+      }, '*')
+    } catch (err: any) {
+      setError('Cold Tell 生成失敗：' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const generate = async () => {
+    if (generatorType === 'cold_tell') {
+      await generateColdTell()
+      return
+    }
+    await generateHostLed()
+  }
+
   const copyScript = () => {
     navigator.clipboard.writeText(script)
     setCopied(true)
@@ -557,6 +778,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
   }
 
   const saveScript = async (qcFinal: string, aiDraftOverride?: string) => {
+    if (generatorType === 'cold_tell') return
     try {
       const { data: authData } = await supabase.auth.getUser()
       const user = authData.user
@@ -698,9 +920,9 @@ ${qcScript}
     await saveScript(qcScript)
     const params = new URLSearchParams({
       script: qcScript,
-      brand: brand || '',
+      brand: generatorType === 'cold_tell' ? (coldProfile?.name || 'Cold Tell') : (brand || ''),
       topic: topic || '',
-      industry: industry || '',
+      industry: generatorType === 'cold_tell' ? 'cold_tell' : (industry || ''),
     })
     window.open(`https://soon-storyboard.vercel.app?${params.toString()}`, '_blank')
   }
@@ -736,6 +958,46 @@ ${qcScript}
         borderTop: `1px solid ${selected ? 'rgba(255,255,255,0.2)' : 'var(--border-subtle)'}`,
         paddingTop: '6px',
       }}>{item.example}</span>
+    </div>
+  )
+
+  const ColdOptionGroup = ({
+    title,
+    options,
+    value,
+    values,
+    onSelect,
+    multi = false,
+  }: {
+    title: string
+    options: ProfileOption[]
+    value?: string
+    values?: string[]
+    onSelect: (id: string) => void
+    multi?: boolean
+  }) => (
+    <div>
+      <div style={{ fontSize: '13px', fontWeight: 600, color: css.ink2, marginBottom: '10px' }}>{title}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+        {options.map((option) => {
+          const id = profileOptionId(option)
+          const label = `${option.emoji ? `${option.emoji} ` : ''}${profileOptionLabel(option)}`
+          const selected = multi ? Boolean(values?.includes(id)) : value === id
+          return (
+            <StyleCard
+              key={id}
+              item={{
+                id,
+                label,
+                desc: profileOptionDesc(option),
+                example: option.template || option.note || option.feel || option.skeleton || '',
+              }}
+              selected={selected}
+              onSelect={() => onSelect(id)}
+            />
+          )
+        })}
+      </div>
     </div>
   )
 
@@ -840,7 +1102,31 @@ ${qcScript}
               <div style={{ marginBottom: '20px' }}>
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em' }}>劇本設定</span>
               </div>
-              <div style={{ display: 'grid', gap: '26px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '26px' }}>
+                {[
+                  { id: 'host_led' as GeneratorType, label: '主持敘事 Host Tell' },
+                  { id: 'cold_tell' as GeneratorType, label: '冷敘事 Cold Tell' },
+                ].map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => setGeneratorType(type.id)}
+                    style={{
+                      cursor: 'pointer',
+                      padding: '13px 14px',
+                      borderRadius: '14px',
+                      border: `1px solid ${generatorType === type.id ? 'var(--accent)' : 'var(--border-default)'}`,
+                      background: generatorType === type.id ? 'var(--accent)' : 'transparent',
+                      color: generatorType === type.id ? '#fff' : 'var(--text-secondary)',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: generatorType === 'host_led' ? 'grid' : 'none', gap: '26px' }}>
                 <div>
                   <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3, marginBottom: '11px' }}>01</div>
                   <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '16px' }}>品牌 / 個人名稱</div>
@@ -902,6 +1188,101 @@ ${qcScript}
                   </div>
                 </div>
               </div>
+              {generatorType === 'cold_tell' && (
+                <div style={{ display: 'grid', gap: '24px' }}>
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3 }}>SOURCE</div>
+                    <div style={{ fontSize: '18px', fontWeight: 600 }}>貼上 source（thread／新聞／逐字稿，留空就由 topic 自己展開）</div>
+                    <textarea
+                      value={coldSource}
+                      onChange={(e) => setColdSource(e.target.value)}
+                      placeholder="Paste thread, news article, transcript, notes..."
+                      style={{ ...inputStyle, minHeight: '180px', resize: 'vertical' as const, lineHeight: 1.7 }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    <div style={{ fontSize: '11px', letterSpacing: '.1em', color: css.ink3 }}>TOPIC</div>
+                    <input
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      placeholder="source 留空時，用呢個 topic 自己展開"
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: css.ink2, marginBottom: '10px' }}>Preset</div>
+                    {coldProfileLoading && <p style={{ color: css.ink3, fontSize: '13px', margin: 0 }}>Loading Cold Tell profile...</p>}
+                    {!coldProfileLoading && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                        {coldPresetOptions.map((preset) => {
+                          const id = profileOptionId(preset)
+                          return (
+                            <StyleCard
+                              key={id}
+                              item={{
+                                id,
+                                label: `${preset.emoji ? `${preset.emoji} ` : ''}${profileOptionLabel(preset)}`,
+                                desc: profileOptionDesc(preset),
+                                example: '',
+                              }}
+                              selected={false}
+                              onSelect={() => applyColdPreset(preset)}
+                            />
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setColdAdvancedOpen((open) => !open)}
+                    style={{
+                      justifySelf: 'flex-start',
+                      cursor: 'pointer',
+                      padding: '9px 14px',
+                      borderRadius: '999px',
+                      border: `1px solid ${css.border}`,
+                      background: css.surface,
+                      color: css.ink2,
+                      fontSize: '13px',
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    {coldAdvancedOpen ? '收起進階' : '進階'}
+                  </button>
+
+                  {coldAdvancedOpen && (
+                    <div style={{ display: 'grid', gap: '20px' }}>
+                      <ColdOptionGroup title="Framework" options={coldFrameworkOptions} value={coldFramework} onSelect={setColdFramework} />
+                      <ColdOptionGroup title="Tense" options={coldTenseOptions} value={coldTense} onSelect={setColdTense} />
+                      <ColdOptionGroup title="Ending" options={coldEndingOptions} value={coldEnding} onSelect={setColdEnding} />
+                      <ColdOptionGroup title="Plugins" options={coldPluginOptions} values={coldPlugins} multi onSelect={toggleColdPlugin} />
+                      <ColdOptionGroup title="Hook" options={coldMainHookOptions} value={coldHook} onSelect={setColdHook} />
+                      {coldCounterOption && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', color: css.ink2, fontSize: '14px', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={coldCounterInstinct}
+                            onChange={(e) => setColdCounterInstinct(e.target.checked)}
+                          />
+                          {`${coldCounterOption.emoji ? `${coldCounterOption.emoji} ` : ''}${profileOptionLabel(coldCounterOption)}`}
+                        </label>
+                      )}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    <button onClick={generate} disabled={loading || coldProfileLoading} style={{ cursor: loading || coldProfileLoading ? 'not-allowed' : 'pointer', padding: '15px 18px', borderRadius: '16px', border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontSize: '15px', fontWeight: 700, boxShadow: '0 18px 36px rgba(124, 92, 252, 0.22)' }}>
+                      {loading ? '生成中...' : '生成冷敘事劇本'}
+                    </button>
+                    <div style={{ fontSize: '13px', color: css.ink3, lineHeight: 1.7 }}>
+                      {coldSource.trim() ? 'Source mode: compress' : 'Source mode: expand'}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -914,7 +1295,9 @@ ${qcScript}
           {script && (
             <section style={{ display: 'grid', gap: '18px' }}>
               <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3 }}>
-                {[brand, industry, topic].filter(Boolean).join('  ·  ')}
+                {generatorType === 'cold_tell'
+                  ? ['冷敘事 Cold Tell', coldSource.trim() ? 'compress' : 'expand', topic].filter(Boolean).join('  ·  ')
+                  : [brand, industry, topic].filter(Boolean).join('  ·  ')}
               </div>
 
               <div style={{ ...railCard, padding: '24px 26px', border: `1px solid ${css.border2}` }}>
@@ -930,6 +1313,19 @@ ${qcScript}
                       ))}
                     </div>
                   </div>
+
+                  {generatorType === 'cold_tell' && coldSources.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '10px' }}>Sources</div>
+                      <div style={{ display: 'grid', gap: '8px' }}>
+                        {coldSources.map((source) => (
+                          <a key={source.url || source.title} href={source.url} target="_blank" rel="noopener noreferrer" style={{ color: '#8ab4ff', fontSize: '13px', textDecoration: 'none', lineHeight: 1.5 }}>
+                            {source.title || source.url}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div style={{ height: '1px', background: css.border }} />
 
@@ -1044,13 +1440,28 @@ ${qcScript}
                 cursor: 'pointer',
               }}
               onClick={() => {
-                setBrand(s.brand || '')
-                setIndustry(s.industry || '')
+                const isColdTell = s.generator_type === 'cold_tell'
+                setGeneratorType(isColdTell ? 'cold_tell' : 'host_led')
+                setBrand(isColdTell ? '' : (s.brand || ''))
+                setIndustry(isColdTell ? industry : (s.industry || ''))
                 setTopic(s.topic || '')
-                setBackground(s.background || '')
-                setSelH(s.hook_code || 'H1')
-                setSelT(s.trans_code || 'T1')
-                setSelE(s.ending_code || 'E1')
+                setBackground(isColdTell ? '' : (s.background || ''))
+                setColdSource(s.source_material || '')
+                setColdSources(Array.isArray(s.research_sources) ? s.research_sources : [])
+                if (isColdTell) {
+                  const snapshot = s.profile_snapshot || {}
+                  const snapshotId = (value: any) => typeof value === 'string' ? value : String(value?.id || '')
+                  setColdFramework(snapshotId(snapshot.framework) || s.framework || '')
+                  setColdTense(snapshotId(snapshot.tense))
+                  setColdEnding(snapshotId(snapshot.ending))
+                  setColdHook(snapshotId(snapshot.hook))
+                  setColdPlugins(Array.isArray(snapshot.plugins) ? snapshot.plugins.map(snapshotId).filter(Boolean) : [])
+                  setColdCounterInstinct(Boolean(snapshot.counter_instinct))
+                } else {
+                  setSelH(s.hook_code || 'H1')
+                  setSelT(s.trans_code || 'T1')
+                  setSelE(s.ending_code || 'E1')
+                }
                 setScript(s.ai_draft || '')
                 setQcScript(s.qc_final || '')
                 setHistoryOpen(false)
@@ -1072,6 +1483,16 @@ ${qcScript}
                 }) : ''}
               </p>
               <div style={{ marginTop: '8px', display: 'flex', gap: '6px' }}>
+                <span style={{
+                  fontSize: '11px',
+                  padding: '2px 8px',
+                  background: s.generator_type === 'cold_tell' ? 'rgba(14,165,233,0.14)' : 'rgba(124,92,252,0.14)',
+                  color: s.generator_type === 'cold_tell' ? '#7dd3fc' : '#c4b5fd',
+                  borderRadius: '999px',
+                  border: '1px solid var(--border-subtle)',
+                }}>
+                  {s.generator_type === 'cold_tell' ? '冷敘事' : '主持敘事'}
+                </span>
                 <span style={{
                   fontSize: '11px',
                   padding: '2px 8px',
