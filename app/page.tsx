@@ -334,7 +334,8 @@ export default function ScriptGenerator() {
   const [coldPlugins, setColdPlugins] = useState<string[]>([])
   const [coldCounterInstinct, setColdCounterInstinct] = useState(false)
   const [coldAdvancedOpen, setColdAdvancedOpen] = useState(false)
-  const [coldSources, setColdSources] = useState<Array<{ title: string; url: string }>>([])
+  const [coldSources, setColdSources] = useState<Array<string | { title?: string; url?: string }>>([])
+  const [coldSourcesOpen, setColdSourcesOpen] = useState(false)
   const [coldPresetSelection, setColdPresetSelection] = useState('auto')
   const [coldAutoSuggestion, setColdAutoSuggestion] = useState<{
     preset_id: string
@@ -519,10 +520,19 @@ export default function ScriptGenerator() {
     const topicParam = params.get('topic')
     const backgroundParam = params.get('background')
     const locationParam = params.get('location')
+    const targetParam = params.get('target')
+    const sourceParam = params.get('source') || params.get('source_material')
     if (topicParam) setTopic(topicParam)
-    if (backgroundParam) setBackground(backgroundParam)
+    if (targetParam === 'cold_tell') {
+      setGeneratorType('cold_tell')
+      setColdPresetSelection('auto')
+      setColdSource(sourceParam || backgroundParam || '')
+      setBackground('')
+    } else if (backgroundParam) {
+      setBackground(backgroundParam)
+    }
     if (locationParam) setScriptLocation(locationParam)
-    if (topicParam || backgroundParam || locationParam) setImportedFromIdea(true)
+    if (topicParam || backgroundParam || locationParam || sourceParam || targetParam) setImportedFromIdea(true)
   }, [])
 
   useEffect(() => {
@@ -732,6 +742,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     setStyleRulesPreview([])
     setStyleSaved(false)
     setColdSources([])
+    setColdSourcesOpen(false)
     setColdAutoSuggestion(null)
 
     try {
@@ -829,6 +840,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
       setScript(generated)
       setQcScript(generated)
       setColdSources(Array.isArray(data.sources) ? data.sources : [])
+      setColdSourcesOpen(false)
     } catch (err: any) {
       setError('冷敘事生成失敗：' + err.message)
     } finally {
@@ -1483,15 +1495,30 @@ ${qcScript}
                   </div>
 
                   {generatorType === 'cold_tell' && coldSources.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', color: css.ink3, marginBottom: '10px' }}>Sources</div>
-                      <div style={{ display: 'grid', gap: '8px' }}>
-                        {coldSources.map((source) => (
-                          <a key={source.url || source.title} href={source.url} target="_blank" rel="noopener noreferrer" style={{ color: '#8ab4ff', fontSize: '13px', textDecoration: 'none', lineHeight: 1.5 }}>
-                            {source.title || source.url}
-                          </a>
-                        ))}
-                      </div>
+                    <div style={{ border: `1px solid ${css.border}`, borderRadius: '12px', padding: '12px 14px', background: css.surface }}>
+                      <button
+                        type="button"
+                        onClick={() => setColdSourcesOpen((open) => !open)}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', border: 'none', background: 'transparent', color: css.ink, cursor: 'pointer', padding: 0, fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        <span style={{ fontSize: '14px', fontWeight: 600 }}>📎 參考來源</span>
+                        <span style={{ fontSize: '12px', color: css.ink3 }}>{coldSourcesOpen ? '收起' : `${coldSources.length} 項`}</span>
+                      </button>
+                      {coldSourcesOpen && (
+                        <div style={{ display: 'grid', gap: '8px', marginTop: '12px' }}>
+                          {coldSources.map((source, index) => {
+                            const text = typeof source === 'string' ? source : (source.title || source.url || '')
+                            const url = typeof source === 'string' ? '' : (source.url || '')
+                            return url ? (
+                              <a key={`${url}-${index}`} href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#8ab4ff', fontSize: '13px', textDecoration: 'none', lineHeight: 1.5 }}>
+                                {text || url}
+                              </a>
+                            ) : (
+                              <div key={`${text}-${index}`} style={{ color: css.ink2, fontSize: '13px', lineHeight: 1.6 }}>{text}</div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1619,6 +1646,7 @@ ${qcScript}
                 setBackground(isColdTell ? '' : (s.background || ''))
                 setColdSource(s.source_material || '')
                 setColdSources(Array.isArray(s.research_sources) ? s.research_sources : [])
+                setColdSourcesOpen(false)
                 if (isColdTell) {
                   const snapshot = s.profile_snapshot || {}
                   const snapshotId = (value: any) => typeof value === 'string' ? value : String(value?.id || '')

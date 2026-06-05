@@ -96,35 +96,43 @@ function getOptionText(option: OptionRecord | null, keys: string[]) {
 
 function extractTextAndSources(content: any[]) {
   const textParts: string[] = []
-  const sourcesByKey = new Map<string, Record<string, string>>()
 
   for (const block of content) {
     if (block?.type === 'text' && typeof block.text === 'string') {
       textParts.push(block.text)
-      for (const citation of block.citations ?? []) {
-        const url = citation.url || citation.uri || citation.source || ''
-        const title = citation.title || citation.cited_text || url
-        if (url || title) {
-          sourcesByKey.set(url || title, { title: String(title || url), url: String(url || '') })
-        }
-      }
     }
+  }
 
-    if (block?.type === 'web_search_tool_result') {
-      const results = Array.isArray(block.content) ? block.content : []
-      for (const result of results) {
-        const url = result.url || result.uri || ''
-        const title = result.title || url
-        if (url || title) {
-          sourcesByKey.set(url || title, { title: String(title || url), url: String(url || '') })
-        }
-      }
+  return splitScriptAndSources(textParts.join('\n\n'))
+}
+
+function cleanLeakedSourcesFromScript(text: string) {
+  return text
+    .split(/\n\s*(?:\*\*)?(?:Research Sources|Sources|參考來源|資料來源)(?:\*\*)?\s*:?\s*\n/i)[0]
+    .replace(/\n\s*(?:\*\*)?(?:Research Sources|Sources|參考來源|資料來源)(?:\*\*)?\s*:?\s*$/i, '')
+    .trim()
+}
+
+function parseSourcesBlock(block: string) {
+  const withoutHeader = block.replace(/^\s*(?:\*\*)?(?:Research Sources|Sources|參考來源|資料來源)(?:\*\*)?\s*:?\s*/i, '')
+  return withoutHeader
+    .split(/\r?\n/)
+    .map((line) => line.trim().replace(/^[-*•]\s*/, '').trim())
+    .filter(Boolean)
+}
+
+function splitScriptAndSources(rawText: string) {
+  const parts = rawText.split('===SOURCES===')
+  if (parts.length > 1) {
+    return {
+      text: cleanLeakedSourcesFromScript(parts[0]),
+      sources: parseSourcesBlock(parts.slice(1).join('===SOURCES===')),
     }
   }
 
   return {
-    text: textParts.join('\n\n').trim(),
-    sources: Array.from(sourcesByKey.values()),
+    text: cleanLeakedSourcesFromScript(rawText),
+    sources: [] as string[],
   }
 }
 
@@ -251,7 +259,7 @@ export async function POST(request: NextRequest) {
         source_mode: sourceMode,
         ai_draft: text,
         qc_final: text,
-        research_sources: sourceMode === 'expand' ? sources : null,
+        research_sources: sourceMode === 'expand' && sources.length > 0 ? sources : null,
         updated_at: new Date().toISOString(),
       })
       .select('*')
