@@ -364,28 +364,32 @@ export default function ScriptGenerator() {
   const loadColdTellProfile = async () => {
     if (coldProfile) return coldProfile
     if (coldProfileLoading) return null
-    const {
-      data: { session: currentSession },
-    } = await supabase.auth.getSession()
-    if (!currentSession?.access_token) {
-      setError('正在連接登入狀態，請稍等再試。')
-      return null
-    }
     setColdProfileLoading(true)
     setError('')
     try {
-      const { data, error } = await supabase
-        .from('style_profiles')
-        .select('id,generator_type,name,description,framework_options,tense_options,ending_options,plugin_options,hook_options,presets')
-        .eq('generator_type', 'cold_tell')
-        .eq('is_active', true)
-        .limit(1)
-        .maybeSingle()
+      const res = await fetch('/api/cold-tell-profile')
+      const data = await res.json()
+      let profile = data.profile as ColdTellProfile | null
 
-      if (error) throw error
-      if (!data) throw new Error('找不到已啟用的冷敘事設定')
+      if (!res.ok || data.error || !profile) {
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession()
+        if (!currentSession?.access_token) throw new Error(data.error || '冷敘事設定載入失敗')
 
-      const profile = data as ColdTellProfile
+        const { data: fallbackProfile, error: fallbackError } = await supabase
+          .from('style_profiles')
+          .select('id,generator_type,name,description,framework_options,tense_options,ending_options,plugin_options,hook_options,presets')
+          .eq('generator_type', 'cold_tell')
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle()
+
+        if (fallbackError) throw fallbackError
+        profile = fallbackProfile as ColdTellProfile | null
+      }
+
+      if (!profile) throw new Error('找不到已啟用的冷敘事設定')
       setColdProfile(profile)
 
       const frameworks = profileOptions(profile.framework_options)
@@ -563,10 +567,10 @@ export default function ScriptGenerator() {
   }, [session?.user?.id])
 
   useEffect(() => {
-    if (generatorType === 'cold_tell' && session?.access_token) {
+    if (generatorType === 'cold_tell') {
       void loadColdTellProfile()
     }
-  }, [generatorType, session?.access_token])
+  }, [generatorType])
 
   useEffect(() => {
     const bootstrapStyleMemory = async () => {
@@ -718,6 +722,9 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
       const {
         data: { session: currentSession },
       } = await supabase.auth.getSession()
+      if (!currentSession?.access_token) {
+        throw new Error('請先登入 SOON，再生成冷敘事劇本。')
+      }
 
       const res = await fetch('/api/generate-cold-tell', {
         method: 'POST',
