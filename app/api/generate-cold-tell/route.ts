@@ -171,6 +171,9 @@ export async function POST(request: NextRequest) {
     const selectedPlugins = pluginOptions.filter((option) => selectedPluginIds.includes(optionId(option)))
     const counterInstinct = Boolean(body.counter_instinct)
     const counterOption = hookOptions.find((option) => optionId(option) === 'counter_instinct' || option.toggle)
+    const presetId = body.preset_id ? String(body.preset_id) : null
+    const autoSuggested = Boolean(body.auto_suggested)
+    const suggestReason = body.suggest_reason ? String(body.suggest_reason) : ''
 
     const system = replaceAllTokens(String(profile.system_prompt || ''), {
       framework_label: optionLabel(framework),
@@ -229,6 +232,9 @@ export async function POST(request: NextRequest) {
       plugins: selectedPlugins.map((option) => ({ id: optionId(option), label: optionLabel(option) })),
       hook: hook ? { id: optionId(hook), label: optionLabel(hook) } : null,
       counter_instinct: counterInstinct,
+      preset_id: presetId,
+      auto_suggested: autoSuggested,
+      suggest_reason: suggestReason,
     }
 
     const { data: scriptRow, error: saveError } = await admin

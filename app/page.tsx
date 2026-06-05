@@ -317,6 +317,13 @@ export default function ScriptGenerator() {
   const [coldCounterInstinct, setColdCounterInstinct] = useState(false)
   const [coldAdvancedOpen, setColdAdvancedOpen] = useState(false)
   const [coldSources, setColdSources] = useState<Array<{ title: string; url: string }>>([])
+  const [coldPresetSelection, setColdPresetSelection] = useState('auto')
+  const [coldAutoSuggestion, setColdAutoSuggestion] = useState<{
+    preset_id: string
+    reason: string
+    label: string
+    emoji: string
+  } | null>(null)
 
   const coldFrameworkOptions = profileOptions(coldProfile?.framework_options)
   const coldTenseOptions = profileOptions(coldProfile?.tense_options)
@@ -401,8 +408,6 @@ export default function ScriptGenerator() {
       setColdEnding((current) => current || profileOptionId(endings[0]))
       setColdHook((current) => current || profileOptionId(hooks[0]))
 
-      const firstPreset = profileOptions(profile.presets)[0]
-      if (firstPreset) applyColdPreset(firstPreset)
       return profile
     } catch (err: any) {
       setError('冷敘事設定載入失敗：' + err.message)
@@ -412,11 +417,12 @@ export default function ScriptGenerator() {
     }
   }
 
-  const applyColdPreset = (preset: ProfileOption) => {
+  const applyColdPreset = (preset: ProfileOption, nextSelection = profileOptionId(preset)) => {
     const framework = String(preset.framework ?? preset.framework_id ?? '')
     const tense = String(preset.tense ?? preset.tense_id ?? '')
     const ending = String(preset.ending ?? preset.ending_id ?? '')
     const hook = String(preset.hook ?? preset.hook_id ?? '')
+    setColdPresetSelection(nextSelection)
     if (framework) setColdFramework(framework)
     if (tense) setColdTense(tense)
     if (ending) setColdEnding(ending)
@@ -424,6 +430,11 @@ export default function ScriptGenerator() {
     if (Array.isArray(preset.plugins)) setColdPlugins(preset.plugins.map(String))
     setColdCounterInstinct(Boolean(preset.counter_instinct))
   }
+
+  const markColdCustom = () => setColdPresetSelection('custom')
+
+  const findColdPreset = (profile: ColdTellProfile, presetId: string) =>
+    profileOptions(profile.presets).find((preset) => profileOptionId(preset) === presetId) || null
 
   const toggleColdPlugin = (pluginId: string) => {
     setColdPlugins((current) =>
@@ -699,7 +710,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     setLoading(false)
   }
 
-  const generateColdTell = async () => {
+  const generateColdTell = async (presetSelectionOverride?: string) => {
     const activeProfile = coldProfile || await loadColdTellProfile()
     if (!activeProfile) return
     if (!coldSource.trim() && !topic.trim()) {
@@ -717,6 +728,7 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
     setStyleRulesPreview([])
     setStyleSaved(false)
     setColdSources([])
+    setColdAutoSuggestion(null)
 
     try {
       const {
@@ -724,6 +736,62 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
       } = await supabase.auth.getSession()
       if (!currentSession?.access_token) {
         throw new Error('請先登入 SOON，再生成冷敘事劇本。')
+      }
+
+      const activeSelection = presetSelectionOverride || coldPresetSelection
+      let selectedPreset: ProfileOption | null = null
+      let autoSuggested = false
+      let suggestReason = ''
+      let framework = coldFramework
+      let tense = coldTense
+      let ending = coldEnding
+      let hook = coldHook
+      let plugins = coldPlugins
+      let counterInstinct = coldCounterInstinct
+
+      if (activeSelection === 'auto') {
+        const analyzeRes = await fetch('/api/analyze-cold-tell', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${currentSession.access_token}`,
+          },
+          body: JSON.stringify({
+            source_material: coldSource,
+            topic,
+          }),
+        })
+        const analyzeData = await analyzeRes.json()
+        if (!analyzeRes.ok || analyzeData.error) throw new Error(analyzeData.error || '自動判斷套餐失敗')
+
+        selectedPreset = findColdPreset(activeProfile, String(analyzeData.preset_id))
+        if (!selectedPreset) throw new Error('AI 選出的套餐不存在')
+        autoSuggested = true
+        suggestReason = String(analyzeData.reason || '')
+        framework = String(selectedPreset.framework ?? selectedPreset.framework_id ?? '')
+        tense = String(selectedPreset.tense ?? selectedPreset.tense_id ?? '')
+        ending = String(selectedPreset.ending ?? selectedPreset.ending_id ?? '')
+        hook = String(selectedPreset.hook ?? selectedPreset.hook_id ?? '')
+        plugins = Array.isArray(selectedPreset.plugins) ? selectedPreset.plugins.map(String) : []
+        counterInstinct = Boolean(selectedPreset.counter_instinct)
+        applyColdPreset(selectedPreset, 'auto')
+        setColdAutoSuggestion({
+          preset_id: profileOptionId(selectedPreset),
+          reason: suggestReason,
+          label: profileOptionLabel(selectedPreset),
+          emoji: String(selectedPreset.emoji || ''),
+        })
+      } else if (activeSelection !== 'custom') {
+        selectedPreset = findColdPreset(activeProfile, activeSelection)
+        if (selectedPreset) {
+          framework = String(selectedPreset.framework ?? selectedPreset.framework_id ?? '')
+          tense = String(selectedPreset.tense ?? selectedPreset.tense_id ?? '')
+          ending = String(selectedPreset.ending ?? selectedPreset.ending_id ?? '')
+          hook = String(selectedPreset.hook ?? selectedPreset.hook_id ?? '')
+          plugins = Array.isArray(selectedPreset.plugins) ? selectedPreset.plugins.map(String) : []
+          counterInstinct = Boolean(selectedPreset.counter_instinct)
+          applyColdPreset(selectedPreset, profileOptionId(selectedPreset))
+        }
       }
 
       const res = await fetch('/api/generate-cold-tell', {
@@ -734,12 +802,15 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
         },
         body: JSON.stringify({
           profile_id: activeProfile.id,
-          framework: coldFramework,
-          tense: coldTense,
-          ending: coldEnding,
-          plugins: coldPlugins,
-          hook: coldHook,
-          counter_instinct: coldCounterInstinct,
+          framework,
+          tense,
+          ending,
+          plugins,
+          hook,
+          counter_instinct: counterInstinct,
+          preset_id: selectedPreset ? profileOptionId(selectedPreset) : null,
+          auto_suggested: autoSuggested,
+          suggest_reason: suggestReason,
           source_material: coldSource,
           topic,
           workspace_id: workspaceId || null,
@@ -1230,6 +1301,16 @@ ${qcScript}
                     {coldProfileLoading && <p style={{ color: css.ink3, fontSize: '13px', margin: 0 }}>正在載入冷敘事設定...</p>}
                     {!coldProfileLoading && (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                        <StyleCard
+                          item={{
+                            id: 'AUTO',
+                            label: '✨ 自動（建議）',
+                            desc: 'AI 先分析來源內容或主題，再從 6 個套餐揀一個。',
+                            example: '',
+                          }}
+                          selected={coldPresetSelection === 'auto'}
+                          onSelect={() => setColdPresetSelection('auto')}
+                        />
                         {coldPresetOptions.map((preset) => {
                           const id = profileOptionId(preset)
                           return (
@@ -1241,7 +1322,7 @@ ${qcScript}
                                 desc: profileOptionDesc(preset),
                                 example: '',
                               }}
-                              selected={false}
+                              selected={coldPresetSelection === id}
                               onSelect={() => applyColdPreset(preset)}
                             />
                           )
@@ -1269,17 +1350,17 @@ ${qcScript}
 
                   {coldAdvancedOpen && (
                     <div style={{ display: 'grid', gap: '20px' }}>
-                      <ColdOptionGroup title="敘事框架" options={coldFrameworkOptions} value={coldFramework} onSelect={setColdFramework} />
-                      <ColdOptionGroup title="時態" options={coldTenseOptions} value={coldTense} onSelect={setColdTense} />
-                      <ColdOptionGroup title="結尾" options={coldEndingOptions} value={coldEnding} onSelect={setColdEnding} />
-                      <ColdOptionGroup title="插件" options={coldPluginOptions} values={coldPlugins} multi onSelect={toggleColdPlugin} />
-                      <ColdOptionGroup title="開場" options={coldMainHookOptions} value={coldHook} onSelect={setColdHook} />
+                      <ColdOptionGroup title="敘事框架" options={coldFrameworkOptions} value={coldFramework} onSelect={(id) => { markColdCustom(); setColdFramework(id) }} />
+                      <ColdOptionGroup title="時態" options={coldTenseOptions} value={coldTense} onSelect={(id) => { markColdCustom(); setColdTense(id) }} />
+                      <ColdOptionGroup title="結尾" options={coldEndingOptions} value={coldEnding} onSelect={(id) => { markColdCustom(); setColdEnding(id) }} />
+                      <ColdOptionGroup title="插件" options={coldPluginOptions} values={coldPlugins} multi onSelect={(id) => { markColdCustom(); toggleColdPlugin(id) }} />
+                      <ColdOptionGroup title="開場" options={coldMainHookOptions} value={coldHook} onSelect={(id) => { markColdCustom(); setColdHook(id) }} />
                       {coldCounterOption && (
                         <label style={{ display: 'flex', alignItems: 'center', gap: '10px', color: css.ink2, fontSize: '14px', cursor: 'pointer' }}>
                           <input
                             type="checkbox"
                             checked={coldCounterInstinct}
-                            onChange={(e) => setColdCounterInstinct(e.target.checked)}
+                            onChange={(e) => { markColdCustom(); setColdCounterInstinct(e.target.checked) }}
                           />
                           {`${coldCounterOption.emoji ? `${coldCounterOption.emoji} ` : ''}${profileOptionLabel(coldCounterOption)}`}
                         </label>
@@ -1313,6 +1394,35 @@ ${qcScript}
                   ? ['冷敘事', coldSource.trim() ? '壓縮' : '展開', topic].filter(Boolean).join('  ·  ')
                   : [brand, industry, topic].filter(Boolean).join('  ·  ')}
               </div>
+
+              {generatorType === 'cold_tell' && coldAutoSuggestion && (
+                <div style={{ ...railCard, display: 'grid', gap: '14px', border: '1px solid rgba(124,92,252,0.45)' }}>
+                  <div style={{ fontSize: '14px', color: css.ink, lineHeight: 1.7 }}>
+                    ✨ AI 判斷：{coldAutoSuggestion.emoji ? `${coldAutoSuggestion.emoji} ` : ''}{coldAutoSuggestion.label} — {coldAutoSuggestion.reason}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '10px' }}>
+                    {coldPresetOptions.map((preset) => {
+                      const id = profileOptionId(preset)
+                      return (
+                        <StyleCard
+                          key={id}
+                          item={{
+                            id,
+                            label: `${preset.emoji ? `${preset.emoji} ` : ''}${profileOptionLabel(preset)}`,
+                            desc: profileOptionDesc(preset),
+                            example: '',
+                          }}
+                          selected={coldAutoSuggestion.preset_id === id}
+                          onSelect={() => {
+                            applyColdPreset(preset)
+                            void generateColdTell(id)
+                          }}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div style={{ ...railCard, padding: '24px 26px', border: `1px solid ${css.border2}` }}>
                 <div style={{ display: 'grid', gap: '24px' }}>
