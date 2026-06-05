@@ -314,6 +314,7 @@ export default function ScriptGenerator() {
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadDone, setUploadDone] = useState(false)
+  const [savingDoc, setSavingDoc] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
   const [importedFromIdea, setImportedFromIdea] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -707,20 +708,6 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
       setScript(generated)
       setQcScript(generated)
       await saveScript(generated, generated)
-      window.parent.postMessage({
-        type: 'SOON_CREATE_DOC',
-        template_type: 'ig_script',
-        qc_final: generated,
-        ai_draft: generated,
-        topic: topic || '',
-        brand: brand || '',
-        industry: industry || '',
-        location: scriptLocation || '',
-        hook_code: selH || '',
-        trans_code: selT || '',
-        ending_code: selE || '',
-        workspace_id: workspaceId || null,
-      }, '*')
     } catch (err: any) {
       setError('出現錯誤：' + err.message)
     }
@@ -842,18 +829,6 @@ ${background ? `背景資料：${background}\n` : ''}Hook：${h.c}｜轉場：${
       setScript(generated)
       setQcScript(generated)
       setColdSources(Array.isArray(data.sources) ? data.sources : [])
-      window.parent.postMessage({
-        type: 'SOON_CREATE_DOC',
-        template_type: 'ig_script',
-        generator_type: 'cold_tell',
-        qc_final: generated,
-        ai_draft: generated,
-        topic: topic || activeProfile.name || '冷敘事',
-        brand: activeProfile.name || '冷敘事',
-        industry: 'cold_tell',
-        location: '',
-        workspace_id: workspaceId || null,
-      }, '*')
     } catch (err: any) {
       setError('冷敘事生成失敗：' + err.message)
     } finally {
@@ -1029,6 +1004,32 @@ ${qcScript}
       industry: generatorType === 'cold_tell' ? 'cold_tell' : (industry || ''),
     })
     window.open(`https://soon-storyboard.vercel.app?${params.toString()}`, '_blank')
+  }
+
+  const saveToDocsCenter = async () => {
+    const finalContent = qcScript || script
+    if (!finalContent) return
+    setSavingDoc(true)
+    try {
+      await saveScript(finalContent)
+      window.parent.postMessage({
+        type: 'SOON_CREATE_DOC',
+        template_type: 'ig_script',
+        generator_type: generatorType,
+        qc_final: finalContent,
+        ai_draft: script,
+        topic: topic || '',
+        brand: generatorType === 'cold_tell' ? (coldProfile?.name || '冷敘事') : (brand || ''),
+        industry: generatorType === 'cold_tell' ? 'cold_tell' : (industry || ''),
+        location: generatorType === 'cold_tell' ? '' : (scriptLocation || ''),
+        hook_code: generatorType === 'host_led' ? (selH || '') : '',
+        trans_code: generatorType === 'host_led' ? (selT || '') : '',
+        ending_code: generatorType === 'host_led' ? (selE || '') : '',
+        workspace_id: workspaceId || null,
+      }, '*')
+    } finally {
+      setSavingDoc(false)
+    }
   }
 
   const StyleCard = ({ item, selected, onSelect }: { item: any, selected: boolean, onSelect: () => void }) => (
@@ -1229,21 +1230,6 @@ ${qcScript}
             </div>
           </div>
           {/* 建議圖片尺寸：1920×280px */}
-          <img
-            src="/script-banner.jpg"
-            alt="IG Reel 劇本工作台"
-            style={{
-              width: '100%',
-              height: '160px',
-              objectFit: 'cover',
-              objectPosition: 'center 40%',
-              borderRadius: '12px',
-              display: 'block',
-              marginBottom: '16px',
-              marginTop: '12px',
-            }}
-          />
-
           <section className="workspace-grid">
             <div style={{ ...railCard, padding: '26px' }}>
               <div style={{ marginBottom: '20px' }}>
@@ -1550,6 +1536,9 @@ ${qcScript}
                 </button>
                 <button onClick={analyzeEdits} disabled={analyzingEdits || !qcScript.trim()} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: `1px solid ${css.border}`, background: css.surface, color: css.ink2, cursor: analyzingEdits ? 'not-allowed' : 'pointer', opacity: analyzingEdits ? 0.6 : 1 }}>
                   {analyzingEdits ? '分析改稿中…' : '分析我改咗咩'}
+                </button>
+                <button onClick={saveToDocsCenter} disabled={savingDoc || !(qcScript || script)} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: '1px solid rgba(125,211,252,0.32)', background: 'rgba(14,165,233,0.14)', color: '#bae6fd', cursor: savingDoc ? 'not-allowed' : 'pointer', opacity: savingDoc ? 0.6 : 1 }}>
+                  {savingDoc ? '儲存中…' : '儲存到文件中心'}
                 </button>
                 <button onClick={uploadToDrive} disabled={uploading} style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", padding: '11px 18px', borderRadius: '999px', border: '1px solid rgba(90,204,150,0.26)', background: uploadDone ? '#4a8a5c' : 'rgba(74,138,92,0.16)', color: uploadDone ? '#fff' : '#baf0cc', cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.6 : 1 }}>
                   {uploading ? '上傳中…' : uploadDone ? '✓ 已上傳 QC 稿到 Drive' : '上傳 QC 稿去 Drive'}
