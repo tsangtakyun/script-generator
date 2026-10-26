@@ -9,6 +9,7 @@ function LoginContent() {
   const supabase = createClient()
 
   const handleGoogleLogin = async () => {
+    if (!supabase) return
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -35,7 +36,12 @@ function LoginContent() {
             你的帳號未獲授權，請聯絡管理員。
           </p>
         )}
-        <button onClick={handleGoogleLogin} style={{ width: '100%', padding: '15px 20px', borderRadius: '16px', border: '1px solid rgba(130,126,255,0.48)', background: 'linear-gradient(135deg,#7b61ff,#5e8bff)', color: '#fff', fontSize: '15px', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, cursor: 'pointer', boxShadow: '0 18px 36px rgba(93,104,255,0.28)' }}>
+        {!supabase && (
+          <p style={{ color: '#ffc0c0', marginBottom: '20px', fontSize: '14px', padding: '14px 16px', borderRadius: '16px', background: 'rgba(88,26,34,0.55)', border: '1px solid rgba(255,120,120,0.2)' }}>
+            Supabase 登入未設定；本機開發可直接開首頁測試劇本工具。
+          </p>
+        )}
+        <button onClick={handleGoogleLogin} disabled={!supabase} style={{ width: '100%', padding: '15px 20px', borderRadius: '16px', border: '1px solid rgba(130,126,255,0.48)', background: 'linear-gradient(135deg,#7b61ff,#5e8bff)', color: '#fff', fontSize: '15px', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, cursor: supabase ? 'pointer' : 'not-allowed', boxShadow: '0 18px 36px rgba(93,104,255,0.28)', opacity: supabase ? 1 : 0.55 }}>
           以 Google 帳號登入
         </button>
       </div>
